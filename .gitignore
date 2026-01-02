@@ -1,0 +1,20 @@
+# build
+node_modules/
+.next/
+
+# env
+.env
+.env.*
+!.env.example
+
+# local registry data (do NOT publish)
+data/
+*.sqlite
+*.db
+
+# OS + misc
+.DS_Store
+
+# your local zips
+src.zip
+src 2.zip

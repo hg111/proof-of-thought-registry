@@ -1,0 +1,88 @@
+import Divider from "@/components/Divider";
+import Button from "@/components/Button";
+import Notice from "@/components/Notice";
+
+export default function Home() {
+  return (
+    <>
+      <div className="kicker">PROOF OF THOUGHT™</div>
+      <h1 className="h1">Prove your idea existed — at a specific moment in time.</h1>
+      <p className="subhead">
+        Create a permanent, third-party certificate showing that you possessed an original idea on a specific date — in minutes.
+      </p>
+
+      {/* Authority Seal */}
+      <div className="heroSeal">
+        <img
+          src="/assets/proof_of_thought_timestamp_seal.png"
+          alt="Proof of Thought Timestamp Seal"
+        />
+      </div>
+
+      <div
+        style={{
+          height: 1,
+          background: "linear-gradient(90deg, transparent, var(--accent), transparent)",
+          margin: "24px 0"
+        }}
+      />
+
+      <Button href="/start">Start a Certificate</Button>
+      <p className="small" style={{ marginTop: 10 }}>
+        Not a patent filing. No lawyers required.
+      </p>
+
+      <Divider />
+
+      <div className="twoCol">
+        <div className="card">
+          <div className="cardTitle">What this is</div>
+          <ul className="list">
+            <li>A third-party timestamped custody record of your original text</li>
+            <li>A formal Certificate of Conception &amp; Possession (PDF)</li>
+            <li>A verification page that confirms the certificate fingerprint</li>
+          </ul>
+        </div>
+
+        <div className="card">
+          <div className="cardTitle">What this is not</div>
+          <ul className="list">
+            <li>Not a patent filing</li>
+            <li>Not legal advice</li>
+            <li>Not a government registry</li>
+          </ul>
+        </div>
+      </div>
+
+      <Divider />
+
+      <div>
+        <div className="kicker">How it works</div>
+        <ol className="list">
+          <li><b>Enter your idea.</b> Paste your original text.</li>
+          <li><b>We time-seal and preserve it.</b> We compute a cryptographic fingerprint and record custody.</li>
+          <li><b>Receive your certificate.</b> Download a formal PDF with a public verification link.</li>
+        </ol>
+      </div>
+
+      <Divider />
+
+      <div>
+        <div className="kicker">Pricing</div>
+        <ul className="list">
+          <li><b>$29</b> — Single Certificate</li>
+        </ul>
+        <p className="small">
+          Additional packs and annual pass can be added after MVP launch.
+        </p>
+      </div>
+
+      <div className="footer">
+        <span>Verification Portal</span>
+        <span>Terms</span>
+        <span>Privacy</span>
+        <span>Contact</span>
+      </div>
+    </>
+  );
+}
