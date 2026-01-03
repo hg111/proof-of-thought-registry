@@ -1,8 +1,13 @@
 import Link from "next/link";
 
 type Props =
-  | { href: string; children: React.ReactNode; disabled?: boolean; onClick?: never }
-  | { onClick: () => void; children: React.ReactNode; disabled?: boolean; href?: never };
+  | { href: string; children: React.ReactNode; disabled?: boolean }
+  | {
+      children: React.ReactNode;
+      disabled?: boolean;
+      onClick?: () => void;
+      type?: "button" | "submit";
+    };
 
 export default function Button(props: Props) {
   const className = "inline-block" as const;
@@ -17,7 +22,7 @@ export default function Button(props: Props) {
     fontSize: 14,
     cursor: (props as any).disabled ? "not-allowed" : "pointer",
     opacity: (props as any).disabled ? 0.5 : 1,
-    userSelect: "none"
+    userSelect: "none",
   };
 
   if ("href" in props) {
@@ -29,7 +34,12 @@ export default function Button(props: Props) {
   }
 
   return (
-    <button style={style} onClick={props.disabled ? undefined : props.onClick}>
+    <button
+      type={props.type ?? "button"}
+      style={style}
+      onClick={props.disabled ? undefined : props.onClick}
+      disabled={props.disabled}
+    >
       {props.children}
     </button>
   );

@@ -43,7 +43,21 @@ export default function AddArtifactPage({
           required
         />
 
-        <Button>Seal Page</Button>
+        <button
+          type="submit"
+          style={{
+            display: "inline-block",
+            background: "#000",
+            color: "#fff",
+            padding: "10px 14px",
+            borderRadius: 0,
+            border: "1px solid #000",
+            fontSize: 14,
+            cursor: "pointer",
+          }}
+        >
+          Seal Page
+      </button>
       </form>
 
       <p className="small" style={{ marginTop: 14 }}>
