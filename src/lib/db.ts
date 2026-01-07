@@ -53,15 +53,22 @@ function ensure() {
       holder_email TEXT,
       canonical_text TEXT NOT NULL,
       content_hash TEXT NOT NULL,
-      pdf_path TEXT,
+      pdf_object_key TEXT,
       access_token TEXT NOT NULL,
       stripe_session_id TEXT,
       stripe_payment_intent TEXT,
       amount_cents INTEGER NOT NULL,
-      currency TEXT NOT NULL
+      currency TEXT NOT NULL,
+      registry_no INTEGER,
+      record_class TEXT DEFAULT 'GENESIS',
+      seal_object_key TEXT,
+      verify_slug TEXT,
+      receipt_pdf_key TEXT,
+      chain_pdf_key TEXT
     );
     CREATE INDEX IF NOT EXISTS idx_submissions_status ON submissions(status);
     CREATE INDEX IF NOT EXISTS idx_submissions_stripe_session ON submissions(stripe_session_id);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_submissions_registry_no ON submissions(registry_no);
   `);
   db.exec(`
     CREATE TABLE IF NOT EXISTS artifacts (
@@ -94,7 +101,7 @@ function ensure() {
   `);
   // --- MIGRATION: registry_no on submissions ---
   const cols = db.prepare(`PRAGMA table_info(submissions)`).all() as Array<{ name: string }>;
-  const hasRegistryNo = cols.some(c => c.name === "registry_no");
+  const colNames = new Set(cols.map(c => c.name));
 
   // --- MIGRATION: thought_caption on artifacts ---
   const aCols = db.prepare(`PRAGMA table_info(artifacts)`).all() as Array<{ name: string }>;
@@ -104,7 +111,7 @@ function ensure() {
     db.exec(`ALTER TABLE artifacts ADD COLUMN thought_caption TEXT;`);
   }
 
-  if (!hasRegistryNo) {
+  if (!colNames.has("registry_no")) {
     db.exec(`ALTER TABLE submissions ADD COLUMN registry_no INTEGER;`);
 
     // Backfill existing rows in created_at order (stable enough for MVP)
@@ -115,11 +122,30 @@ function ensure() {
     db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_submissions_registry_no ON submissions(registry_no);`);
   }
 
-  // --- MIGRATION: record_class on submissions ---
-  const hasRecordClass = cols.some(c => c.name === "record_class");
-  if (!hasRecordClass) {
+  // --- COMPREHENSIVE MIGRATIONS ---
+  if (!colNames.has("record_class")) {
     db.exec(`ALTER TABLE submissions ADD COLUMN record_class TEXT DEFAULT 'GENESIS';`);
   }
+  if (!colNames.has("pdf_object_key")) {
+    // If we have pdf_path, we might want to migrate it, or just add the new column.
+    // For now, assuming pdf_path is abandoned or empty in PROD, simply add the new one.
+    db.exec(`ALTER TABLE submissions ADD COLUMN pdf_object_key TEXT;`);
+  }
+  if (!colNames.has("seal_object_key")) {
+    db.exec(`ALTER TABLE submissions ADD COLUMN seal_object_key TEXT;`);
+  }
+  if (!colNames.has("verify_slug")) {
+    db.exec(`ALTER TABLE submissions ADD COLUMN verify_slug TEXT;`);
+    // Backfill verify_slug = id
+    db.exec(`UPDATE submissions SET verify_slug = id WHERE verify_slug IS NULL;`);
+  }
+  if (!colNames.has("receipt_pdf_key")) {
+    db.exec(`ALTER TABLE submissions ADD COLUMN receipt_pdf_key TEXT;`);
+  }
+  if (!colNames.has("chain_pdf_key")) {
+    db.exec(`ALTER TABLE submissions ADD COLUMN chain_pdf_key TEXT;`);
+  }
+
   return db;
 }
 
