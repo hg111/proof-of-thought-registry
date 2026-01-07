@@ -114,6 +114,12 @@ function ensure() {
 
     db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_submissions_registry_no ON submissions(registry_no);`);
   }
+
+  // --- MIGRATION: record_class on submissions ---
+  const hasRecordClass = cols.some(c => c.name === "record_class");
+  if (!hasRecordClass) {
+    db.exec(`ALTER TABLE submissions ADD COLUMN record_class TEXT DEFAULT 'GENESIS';`);
+  }
   return db;
 }
 
