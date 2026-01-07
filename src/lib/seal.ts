@@ -73,6 +73,7 @@ export async function generateSealPng(args: {
   verificationUrl: string;     // NEW
   holderName: string;          // NEW
   bg?: BgMode;
+  resize?: number;             // NEW: Explicit output size
 }) {
   const scriptPath = path.join(process.cwd(), "scripts", "generate_seal.py");
 
@@ -99,7 +100,7 @@ export async function generateSealPng(args: {
     }
   }
 
-  await run("python3", [
+  const scriptArgs = [
     scriptPath,
     "--date", dateText,
     "--cert_id", args.certId,
@@ -115,7 +116,13 @@ export async function generateSealPng(args: {
 
     "--input", inputPath,
     "--output", outPath,
-  ]);
+  ];
+
+  if (args.resize) {
+    scriptArgs.push("--resize", String(args.resize));
+  }
+
+  await run("python3", scriptArgs);
 
   return fs.readFileSync(outPath);
 }

@@ -77,7 +77,7 @@ export async function POST(req: Request) {
     const registryNo = formatRegistryNo(sub.registry_no);
     const holderName = String(sub.holder_name || "");
 
-    // 1) transparent seal for embedding in the PDF
+    // 1) transparent seal for embedding in the PDF (Micro-seal: 600px is plenty for 120px display)
     sealBytesForPdf = await generateSealPng({
       certId: sub.id,
       issuedAtUtcIso: issuedAtUtc,
@@ -87,6 +87,7 @@ export async function POST(req: Request) {
       verificationUrl,
       holderName,
       bg: "transparent",
+      resize: 600,
     });
 
     // 2) stored seal on disk

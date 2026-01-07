@@ -193,6 +193,7 @@ def main():
     parser.add_argument("--output", type=str, default="stamped_seal_final_HR.png", help="Path to output image")
     parser.add_argument("--font", type=str, default="/System/Library/Fonts/Supplemental/Arial Bold.ttf", help="Path to font file")
     parser.add_argument("--variant", type=str, choices=["MINTED","ENGRAVED"], default="MINTED")
+    parser.add_argument("--resize", type=int, default=None, help="Force resize output (width in px)")
     parser.add_argument("--bg", type=str, default="transparent", choices=["transparent", "white"],
                     help="Background mode for output PNG")
 
@@ -319,8 +320,10 @@ def main():
 
  
 
-    # Always render on the 2x plate; only downscale for MINTED
-    if args.variant == "MINTED":
+    # Always render on the 2x plate; only downscale if requested or MINTED default
+    if args.resize:
+        out = base_with_emboss.resize((args.resize, args.resize), Image.LANCZOS)
+    elif args.variant == "MINTED":
         out = base_with_emboss.resize((1024, 1024), Image.LANCZOS)
 
     # ✅ APPLY BACKGROUND MODE
