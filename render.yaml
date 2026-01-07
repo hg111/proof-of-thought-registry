@@ -4,8 +4,6 @@ services:
     runtime: docker
     plan: starter # Persistent Disks require a paid plan
     region: oregon # choose closest to you
-    buildCommand: docker build -t pot-app .
-    startCommand: node server.js
     envVars:
       - key: PORT
         value: 3333
