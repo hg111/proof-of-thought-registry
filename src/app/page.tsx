@@ -73,8 +73,20 @@ export default function Home() {
           <li><b>$29</b> — Single Certificate</li>
         </ul>
         <p className="small">
-          Additional packs and annual pass can be added after MVP launch.
+          Individual certificates are available today. <br />
+          Institutional, enterprise, and long-horizon custody tiers will be available shortly.
         </p>
+      </div>
+
+      <div style={{ marginTop: 40, textAlign: "center" }}>
+        <a
+          href="/assets/Proof_of_Thought_Genesis_White_Paper.pdf"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: "var(--accent)", fontSize: "0.9rem", textDecoration: "none" }}
+        >
+          Read the Founding White Paper &rarr;
+        </a>
       </div>
 
       <div className="footer">
