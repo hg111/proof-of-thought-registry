@@ -6,7 +6,7 @@ export default function Home() {
   return (
     <>
       <div className="kicker">PROOF OF THOUGHT™</div>
-      <h1 className="h1">Prove your idea existed — at a specific moment in time.</h1>
+      <h1 className="h1">Prove the idea is yours - seal it in 30 seconds.</h1>
       <p className="subhead">
         Create a permanent, cryptographically verifiable, time-stamped record showing that you possessed an original idea at a specific moment in time.
       </p>
@@ -38,9 +38,9 @@ export default function Home() {
         <div className="card">
           <div className="cardTitle">What this is</div>
           <ul className="list">
-            <li>A formal Certificate of Conception &amp; Possession (PDF)</li>
-            <li>A cryptographic chain that permanently records how your idea evolves over time</li>
-            <li>A private custody vault that preserves your sealed ideas under neutral third-party custody</li>
+            <li>A formal Certificate of conception &amp; possession</li>
+            <li>A private custody vault that preserves your sealed ideas </li>
+            <li>A cryptographic chain records your idea evolves over time</li>
           </ul>
         </div>
 
