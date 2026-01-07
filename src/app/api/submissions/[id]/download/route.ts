@@ -33,11 +33,17 @@ export async function GET(req: NextRequest, ctx: { params: { id: string } }) {
       );
     }
 
-    const buf = fs.readFileSync(full);
-    return new NextResponse(buf, {
+    const stat = fs.statSync(full);
+    const fileStream = fs.createReadStream(full);
+
+    // Casting the stream to any because NextResponse expects a specific stream type
+    // but works with Node.js Readable streams in recent Next.js versions.
+    // Alternatively, use `new Response(fileStream as any, ...)`
+    return new NextResponse(fileStream as any, {
       headers: {
         "content-type": "application/pdf",
         "content-disposition": `attachment; filename="proof-of-thought-${id}.pdf"`,
+        "content-length": stat.size.toString(),
         "cache-control": "no-store",
       },
     });
