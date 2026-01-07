@@ -28,7 +28,7 @@ export default function Home() {
       />
 
       <Button href="/start">Start a Certificate</Button>
-      <p className="small" style={{ marginTop: 24 }}>
+      <p className="small" style={{ marginTop: 18 }}>
         Not a patent filing. No lawyers required.
       </p>
 
@@ -40,7 +40,7 @@ export default function Home() {
           <ul className="list">
             <li>A formal Certificate of conception &amp; possession</li>
             <li>A private custody vault that preserves your sealed ideas </li>
-            <li>A cryptographic chain records your idea evolves over time</li>
+            <li>A cryptographic chain records your idea as it evolves over time</li>
           </ul>
         </div>
 
@@ -73,8 +73,7 @@ export default function Home() {
           <li><b>$29</b> — Single Certificate</li>
         </ul>
         <p className="small">
-          Individual certificates are available today. <br />
-          Institutional, enterprise, and long-horizon custody tiers will be available shortly.
+          Individual certificates are available today. Institutional, enterprise, and long-horizon custody tiers will be available shortly.
         </p>
       </div>
 
