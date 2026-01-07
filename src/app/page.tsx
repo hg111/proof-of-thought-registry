@@ -8,7 +8,7 @@ export default function Home() {
       <div className="kicker">PROOF OF THOUGHT™</div>
       <h1 className="h1">Prove your idea existed — at a specific moment in time.</h1>
       <p className="subhead">
-        Create a permanent, third-party certificate showing that you possessed an original idea on a specific date — in minutes.
+        Create a permanent, cryptographically verifiable, time-stamped record showing that you possessed an original idea at a specific moment in time.
       </p>
 
       {/* Authority Seal */}
@@ -28,7 +28,7 @@ export default function Home() {
       />
 
       <Button href="/start">Start a Certificate</Button>
-      <p className="small" style={{ marginTop: 10 }}>
+      <p className="small" style={{ marginTop: 24 }}>
         Not a patent filing. No lawyers required.
       </p>
 
@@ -38,9 +38,9 @@ export default function Home() {
         <div className="card">
           <div className="cardTitle">What this is</div>
           <ul className="list">
-            <li>A third-party timestamped custody record of your original text</li>
             <li>A formal Certificate of Conception &amp; Possession (PDF)</li>
-            <li>A verification page that confirms the certificate fingerprint</li>
+            <li>A cryptographic chain that permanently records how your idea evolves over time</li>
+            <li>A private custody vault that preserves your sealed ideas under neutral third-party custody</li>
           </ul>
         </div>
 
