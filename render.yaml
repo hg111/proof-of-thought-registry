@@ -20,6 +20,12 @@ services:
         sync: false
       - key: STRIPE_WEBHOOK_SECRET
         sync: false
+      - key: STRIPE_PRICE_GENESIS
+        sync: false
+      - key: STRIPE_PRICE_MINTED
+        sync: false
+      - key: STRIPE_PRICE_ENGRAVED
+        sync: false
     disk:
       name: pot_data
       mountPath: /app/data
