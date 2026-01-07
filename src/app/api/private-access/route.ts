@@ -38,7 +38,9 @@ export async function POST(req: Request) {
 
   // Correct phrase → set cookie + redirect to intended page
   const safeNext = sanitizeNext(nextRaw);
-  const res = NextResponse.redirect(new URL(safeNext, req.url));
+  // Use configured public URL aka APP_BASE_URL to avoid internal docker IP (0.0.0.0) leaking into redirect
+  const baseUrl = process.env.APP_BASE_URL || req.url;
+  const res = NextResponse.redirect(new URL(safeNext, baseUrl));
 
   res.cookies.set({
     name: COOKIE_NAME,
