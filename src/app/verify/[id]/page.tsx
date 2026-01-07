@@ -5,6 +5,8 @@ import { dbGetSubmission, formatRegistryNo } from "@/lib/db";
 import { getDailyRootForDate } from "@/lib/dailyRoots";
 
 
+export const dynamic = 'force-dynamic';
+
 export default async function VerifyPage({ params }: { params: { id: string } }) {
   const id = params.id;
   const sub = dbGetSubmission(id);

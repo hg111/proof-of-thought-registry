@@ -5,23 +5,27 @@ import Divider from "@/components/Divider";
 import Field from "@/components/Field";
 import Button from "@/components/Button";
 import Notice from "@/components/Notice";
+import type { RecordClass } from "@/lib/records";
 
 export default function StartPage() {
   const [title, setTitle] = useState("");
   const [holderName, setHolderName] = useState("");
   const [holderEmail, setHolderEmail] = useState("");
   const [text, setText] = useState("");
+  const [recordClass, setRecordClass] = useState<RecordClass>("GENESIS");
+
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   async function onSubmit() {
     setErr(null);
     setBusy(true);
+
     try {
       const r1 = await fetch("/api/submissions", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ title, holderName, holderEmail, text })
+        body: JSON.stringify({ title, holderName, holderEmail, text, recordClass }),
       });
       const j1 = await r1.json();
       if (!r1.ok) throw new Error(j1?.error || "Failed to create submission.");
@@ -29,7 +33,7 @@ export default function StartPage() {
       const r2 = await fetch("/api/checkout", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ id: j1.id, token: j1.token })
+        body: JSON.stringify({ id: j1.id, token: j1.token, recordClass }),
       });
       const j2 = await r2.json();
       if (!r2.ok) throw new Error(j2?.error || "Failed to create checkout.");
@@ -84,6 +88,26 @@ export default function StartPage() {
       )}
 
       <Divider />
+
+      <label className="small">Record Type</label>
+
+      <select
+        value={recordClass}
+        onChange={(e) => setRecordClass(e.target.value as RecordClass)}
+        style={{
+          display: "block",
+          marginTop: 6,
+          marginBottom: 14,
+          width: "100%",
+          padding: 10,
+          border: "1px solid #000",
+          fontSize: 14,
+        }}
+      >
+        <option value="GENESIS">Genesis Record — $29 (Cryptographic proof of possession)</option>
+        <option value="MINTED">Minted Instrument — $49 (Formal serialed instrument)</option>
+        <option value="ENGRAVED">Engraved Instrument — $99 (Instrument + engraved seal)</option>
+      </select>
 
       <Button onClick={onSubmit} disabled={busy || text.trim().length === 0}>
         {busy ? "Processing…" : "Continue to Payment"}

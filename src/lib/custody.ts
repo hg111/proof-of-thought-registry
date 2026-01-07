@@ -2,22 +2,39 @@ import fs from "fs";
 import path from "path";
 import { config } from "@/lib/config";
 
-export function ensureCustodyDir(id: string) {
-  const dir = path.join(config.dataDir, "submissions", id);
-  fs.mkdirSync(dir, { recursive: true });
-  return dir;
+function ensureDir(p: string) {
+  fs.mkdirSync(p, { recursive: true });
 }
 
-export function writeCustodyText(id: string, canonicalText: string) {
-  const dir = ensureCustodyDir(id);
-  const p = path.join(dir, "submission.txt");
-  fs.writeFileSync(p, canonicalText, "utf8");
-  return p;
+/* Canonical custody text */
+export function writeCustodyText(certId: string, canonicalText: string) {
+  const dir = path.join(config.dataDir, "custody");
+  ensureDir(dir);
+
+  const full = path.join(dir, `${certId}.txt`);
+  fs.writeFileSync(full, canonicalText, "utf8");
 }
 
-export function writePdf(id: string, pdfBytes: Buffer) {
-  const dir = ensureCustodyDir(id);
-  const p = path.join(dir, "certificate.pdf");
-  fs.writeFileSync(p, pdfBytes);
-  return p;
+/* Certificate PDF */
+export function writePdf(certId: string, pdfBytes: Buffer) {
+  const dir = path.join(config.dataDir, "pdf");
+  ensureDir(dir);
+
+  const key = `pdf/${certId}.pdf`;
+  const full = path.join(config.dataDir, key);
+  fs.writeFileSync(full, pdfBytes);
+
+  return key;
+}
+
+/* Engraved seal PNG */
+export function writeSealPng(certId: string, pngBytes: Buffer) {
+  const dir = path.join(config.dataDir, "seals");
+  ensureDir(dir);
+
+  const key = `seals/${certId}.png`;
+  const full = path.join(config.dataDir, key);
+  fs.writeFileSync(full, pngBytes);
+
+  return key;
 }

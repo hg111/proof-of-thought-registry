@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server";
-import { stripe } from "@/lib/stripe";
-import { config } from "@/lib/config";
+import { getStripe } from "@/lib/stripe";
+import { config, stripeConfig } from "@/lib/config";
 import { dbGetSubmission, dbSetStripeSession } from "@/lib/db";
 
 export const runtime = "nodejs";
+
+function priceForRecordClass(rc: string | null | undefined) {
+  if (rc === "MINTED") return stripeConfig.priceMinted;
+  if (rc === "ENGRAVED") return stripeConfig.priceEngraved;
+  return stripeConfig.priceGenesis; // default
+}
 
 export async function POST(req: Request) {
   try {
@@ -14,13 +20,13 @@ export async function POST(req: Request) {
     if (!sub) return NextResponse.json({ error: "Not found." }, { status: 404 });
     if (sub.access_token !== String(token)) return NextResponse.json({ error: "Access denied." }, { status: 403 });
 
-    const session = await stripe.checkout.sessions.create({
+    const session = await getStripe().checkout.sessions.create({
       mode: "payment",
-      line_items: [{ price: config.stripePriceId, quantity: 1 }],
+      line_items: [{ price: priceForRecordClass(sub.record_class), quantity: 1 }],
       success_url: `${config.appBaseUrl}/success?id=${encodeURIComponent(sub.id)}&t=${encodeURIComponent(sub.access_token)}`,
       cancel_url: `${config.appBaseUrl}/start`,
-      metadata: { submission_id: sub.id },
-      payment_intent_data: { metadata: { submission_id: sub.id } }
+      metadata: { submission_id: sub.id, recordClass: sub.record_class },
+      payment_intent_data: { metadata: { submission_id: sub.id, recordClass: sub.record_class } },
     });
 
     dbSetStripeSession(sub.id, session.id);

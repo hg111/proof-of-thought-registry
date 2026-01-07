@@ -5,12 +5,17 @@ import Database from "better-sqlite3";
 import path from "path";
 import { config } from "@/lib/config";
 
-// We need direct DB access to query by day without refactoring your db.ts exports
-const dbFile = path.join(config.dataDir, "registry.sqlite");
-const db = new Database(dbFile);
 
-function dayUtcFromIso(iso: string) {
-  return iso.slice(0, 10); // YYYY-MM-DD
+// Lazy load local DB connection to prevent build-time crash
+
+// Lazy load local DB connection to prevent build-time crash
+let _db: Database.Database | null = null;
+function getLocalDb() {
+  if (!_db) {
+    const dbFile = path.join(config.dataDir, "registry.sqlite");
+    _db = new Database(dbFile);
+  }
+  return _db;
 }
 
 export function leafHashForIssuedCert(row: any) {
@@ -26,7 +31,7 @@ export function leafHashForArtifact(row: any) {
 
 export function buildDailyRoot(dayUtc: string) {
   // issued certs for day
-  const certs = db.prepare(`
+  const certs = getLocalDb().prepare(`
     SELECT id, issued_at, content_hash
     FROM submissions
     WHERE status='issued' AND issued_at IS NOT NULL AND substr(issued_at,1,10) = ?
@@ -34,7 +39,7 @@ export function buildDailyRoot(dayUtc: string) {
   `).all(dayUtc);
 
   // artifacts for day
-  const arts = db.prepare(`
+  const arts = getLocalDb().prepare(`
     SELECT id, parent_certificate_id, issued_at, canonical_hash, chain_hash
     FROM artifacts
     WHERE issued_at IS NOT NULL AND substr(issued_at,1,10) = ?

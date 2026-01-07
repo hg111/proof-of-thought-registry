@@ -3,6 +3,8 @@ import MonoBlock from "@/components/MonoBlock";
 import { dbGetSubmission } from "@/lib/db";
 import { getDailyRootForDate } from "@/lib/dailyRoots";
 
+export const dynamic = 'force-dynamic';
+
 export default function PublicVerify({ params }: { params: { id: string } }) {
   const sub = dbGetSubmission(params.id);
   if (!sub) return <h1>Not Found</h1>;

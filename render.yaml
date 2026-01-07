@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: proofofthought
+    runtime: docker
+    plan: starter # Persistent Disks require a paid plan
+    region: oregon # choose closest to you
+    buildCommand: docker build -t pot-app .
+    startCommand: node server.js
+    envVars:
+      - key: PORT
+        value: 3333
+      - key: HOSTNAME
+        value: "0.0.0.0"
+      - key: DATA_DIR
+        value: /app/data
+      # Add placeholders for secrets you must set in dashboard
+      - key: APP_BASE_URL
+        sync: false
+      - key: POT_PRIVATE_PHRASE
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+    disk:
+      name: pot_data
+      mountPath: /app/data
+      sizeGB: 1

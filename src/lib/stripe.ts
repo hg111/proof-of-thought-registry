@@ -1,4 +1,15 @@
+// src/lib/stripe.ts
 import Stripe from "stripe";
-import { config } from "@/lib/config";
+import { stripeConfig } from "@/lib/config";
 
-export const stripe = new Stripe(config.stripeSecretKey, { apiVersion: "2024-06-20" });
+
+let _stripe: Stripe | null = null;
+
+export const getStripe = () => {
+  if (!_stripe) {
+    _stripe = new Stripe(stripeConfig.secretKey, {
+      apiVersion: "2024-06-20",
+    });
+  }
+  return _stripe;
+};

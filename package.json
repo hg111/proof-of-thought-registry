@@ -11,6 +11,7 @@
     "db:init": "node ./scripts/init-db.mjs"
   },
   "dependencies": {
+    "@pdf-lib/fontkit": "^1.1.1",
     "better-sqlite3": "^11.1.0",
     "iconv-lite": "^0.7.1",
     "next": "^14.2.35",
@@ -24,6 +25,7 @@
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
     "@types/react": "19.2.7",
+    "tsx": "^4.21.0",
     "typescript": "5.9.3"
   }
 }

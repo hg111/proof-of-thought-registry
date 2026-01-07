@@ -2,6 +2,26 @@ import Divider from "@/components/Divider";
 import MonoBlock from "@/components/MonoBlock";
 import Button from "@/components/Button";
 import { dbArtifactsForParent, dbGetSubmission } from "@/lib/db";
+//import CopyPrivateControlLink from "@/components/CopyPrivateControlLink";
+import { config } from "@/lib/config";
+import nextDynamic from "next/dynamic";
+
+export const dynamic = 'force-dynamic';
+
+
+const CopyPrivateControlLink = nextDynamic(
+  () => import("@/components/CopyPrivateControlLink"),
+  { ssr: false }
+);
+
+const SealPoller = nextDynamic(() => import("@/components/SealPoller"), { ssr: false });
+
+const fmtUtcSafe = (v: any) => {
+  const s = String(v ?? "").trim();
+  if (!s) return "—";
+  const d = new Date(s);
+  return Number.isNaN(d.getTime()) ? s : d.toUTCString();
+};
 
 export default async function SuccessPage({ searchParams }: { searchParams: { id?: string; t?: string } }) {
   const id = searchParams?.id || "";
@@ -18,6 +38,7 @@ export default async function SuccessPage({ searchParams }: { searchParams: { id
 
   const sub = dbGetSubmission(id);
   const artifacts = dbArtifactsForParent(id);
+
   if (!sub) {
     return (
       <>
@@ -33,6 +54,9 @@ export default async function SuccessPage({ searchParams }: { searchParams: { id
       </>
     );
   }
+
+  const privateUrl = `${config.appBaseUrl}/success?id=${encodeURIComponent(sub.id)}&t=${encodeURIComponent(t)}`;
+
 
   return (
     <>
@@ -52,12 +76,32 @@ export default async function SuccessPage({ searchParams }: { searchParams: { id
       <Button href={`/api/download/${encodeURIComponent(sub.id)}?t=${encodeURIComponent(t)}`}>
         Download PDF
       </Button>
+      {artifacts.length > 0 ? (
+        <Button href={`/api/chain/${encodeURIComponent(sub.id)}/download?t=${encodeURIComponent(t)}`}>
+          Download Chain PDF
+        </Button>
+      ) : null}
+
+
+      <Button href={`/api/control-slip/${encodeURIComponent(sub.id)}?t=${encodeURIComponent(t)}`}>
+        Download Control Slip
+      </Button>
+
+      {sub.record_class === "ENGRAVED" && sub.seal_object_key ? (
+        <p className="small" style={{ marginTop: 10 }}>
+          <a href={`/api/seal/${encodeURIComponent(sub.id)}/download?t=${encodeURIComponent(t)}`}>
+            Download Seal (PNG)
+          </a>
+        </p>
+      ) : sub.record_class === "ENGRAVED" ? (
+        <SealPoller />
+      ) : null}
 
       <p className="small" style={{ marginTop: 10 }}>
         Public verification link:{" "}
         <a href={`/verify/${encodeURIComponent(sub.id)}`}>{`${sub.id}`}</a>
       </p>
-            <Divider />
+      <Divider />
 
       <div className="kicker">Ledger</div>
       <h2 className="h2">Certificate timeline</h2>
@@ -65,8 +109,9 @@ export default async function SuccessPage({ searchParams }: { searchParams: { id
         Page 1 is your Genesis Proof. Add sealed pages as your idea evolves.
       </p>
 
+
       <Divider />
-      <MonoBlock label="Page 1 — Genesis Proof" value={sub.issued_at ? new Date(sub.issued_at).toUTCString() : "—"} />
+      <MonoBlock label="Page 1 — Genesis Proof" value={fmtUtcSafe(sub.issued_at)} />
       <MonoBlock label="Genesis hash (SHA-256)" value={sub.content_hash} />
 
       {artifacts.length > 0 && (
@@ -75,7 +120,12 @@ export default async function SuccessPage({ searchParams }: { searchParams: { id
           {artifacts.map((a, idx) => (
             <div key={a.id} style={{ marginBottom: 14 }}>
               <MonoBlock label={`Page ${idx + 2} — Sealed Image`} value={`${a.original_filename}`} />
-              <MonoBlock label="Issued (UTC)" value={new Date(a.issued_at).toUTCString()} />
+              {a.thought_caption ? (
+                <p className="small" style={{ marginTop: 6, fontStyle: "italic" }}>
+                  Thought Note: {a.thought_caption}
+                </p>
+              ) : null}
+              <MonoBlock label="Issued (UTC)" value={fmtUtcSafe(a.issued_at)} />
               <MonoBlock label="Canonical hash (SHA-256)" value={a.canonical_hash} />
               <MonoBlock label="Chain hash" value={a.chain_hash} />
               <div style={{ marginTop: 8 }}>

@@ -36,11 +36,30 @@ export default function AddArtifactPage({
 
         <label className="small">Image</label>
         <input
-          style={{ display: "block", marginTop: 8, marginBottom: 16 }}
+          style={{ display: "block", marginTop: 8, marginBottom: 12 }}
           type="file"
           name="file"
           accept="image/*"
           required
+        />
+
+        <label className="small">Thought Note (optional)</label>
+        <textarea
+          name="thoughtCaption"
+          placeholder="One sentence: why this sealed page exists…"
+          rows={2}
+          maxLength={240}
+          style={{
+            display: "block",
+            width: "100%",
+            marginTop: 8,
+            marginBottom: 16,
+            padding: "10px 12px",
+            border: "1px solid #000",
+            borderRadius: 0,
+            fontSize: 14,
+            resize: "vertical",
+          }}
         />
 
         <button
@@ -57,7 +76,7 @@ export default function AddArtifactPage({
           }}
         >
           Seal Page
-      </button>
+        </button>
       </form>
 
       <p className="small" style={{ marginTop: 14 }}>

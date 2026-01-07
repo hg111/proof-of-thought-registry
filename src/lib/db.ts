@@ -2,6 +2,7 @@ import Database from "better-sqlite3";
 import fs from "fs";
 import path from "path";
 import { config } from "@/lib/config";
+import type { RecordClass } from "@/lib/records";
 
 type SubmissionRow = {
   id: string;
@@ -20,11 +21,17 @@ type SubmissionRow = {
   amount_cents: number;
   currency: string;
   registry_no: number | null;
+  record_class: RecordClass;
+  seal_object_key: string | null;
 };
 
 
 
 const dbFile = path.join(config.dataDir, "registry.sqlite");
+
+export function dbSetSealObjectKey(id: string, key: string) {
+  getDb().prepare(`UPDATE submissions SET seal_object_key = ? WHERE id = ?`).run(key, id);
+}
 
 export function formatRegistryNo(n: number | null | undefined) {
   if (!n || n < 1) return "—";
@@ -56,7 +63,7 @@ function ensure() {
     CREATE INDEX IF NOT EXISTS idx_submissions_status ON submissions(status);
     CREATE INDEX IF NOT EXISTS idx_submissions_stripe_session ON submissions(stripe_session_id);
   `);
-    db.exec(`
+  db.exec(`
     CREATE TABLE IF NOT EXISTS artifacts (
       id TEXT PRIMARY KEY,
       parent_certificate_id TEXT NOT NULL,
@@ -73,7 +80,7 @@ function ensure() {
     CREATE INDEX IF NOT EXISTS idx_artifacts_parent ON artifacts(parent_certificate_id);
     CREATE INDEX IF NOT EXISTS idx_artifacts_issued_at ON artifacts(issued_at);
   `);
-    db.exec(`
+  db.exec(`
     CREATE TABLE IF NOT EXISTS daily_roots (
       day_utc TEXT PRIMARY KEY,
       root_hash TEXT NOT NULL,
@@ -85,9 +92,17 @@ function ensure() {
     );
     CREATE INDEX IF NOT EXISTS idx_daily_roots_computed_at ON daily_roots(computed_at);
   `);
-    // --- MIGRATION: registry_no on submissions ---
+  // --- MIGRATION: registry_no on submissions ---
   const cols = db.prepare(`PRAGMA table_info(submissions)`).all() as Array<{ name: string }>;
   const hasRegistryNo = cols.some(c => c.name === "registry_no");
+
+  // --- MIGRATION: thought_caption on artifacts ---
+  const aCols = db.prepare(`PRAGMA table_info(artifacts)`).all() as Array<{ name: string }>;
+  const hasThoughtCaption = aCols.some(c => c.name === "thought_caption");
+
+  if (!hasThoughtCaption) {
+    db.exec(`ALTER TABLE artifacts ADD COLUMN thought_caption TEXT;`);
+  }
 
   if (!hasRegistryNo) {
     db.exec(`ALTER TABLE submissions ADD COLUMN registry_no INTEGER;`);
@@ -103,7 +118,15 @@ function ensure() {
 }
 
 
-const db = ensure();
+
+let _db: Database.Database | null = null;
+
+function getDb() {
+  if (!_db) {
+    _db = ensure();
+  }
+  return _db;
+}
 
 export function dbCreateDraft(args: {
   id: string;
@@ -115,31 +138,67 @@ export function dbCreateDraft(args: {
   accessToken: string;
   amountCents: number;
   currency: string;
+  recordClass?: RecordClass;
 }) {
-  const next = db.prepare(`SELECT COALESCE(MAX(registry_no), 0) + 1 AS n FROM submissions`).get() as { n: number };
+  const db = getDb();
+  const next = getDb().prepare(`SELECT COALESCE(MAX(registry_no), 0) + 1 AS n FROM submissions`).get() as { n: number };
   const registryNo = next.n;
   const now = new Date().toISOString();
-  const stmt = db.prepare(`
-    INSERT INTO submissions (
-      id, registry_no, created_at, issued_at, status, title, holder_name, holder_email,
-      canonical_text, content_hash, pdf_path, access_token,
-      stripe_session_id, stripe_payment_intent, amount_cents, currency
-    ) VALUES (
-      @id, @registry_no, @created_at, NULL, 'draft', @title, @holder_name, @holder_email,
-      @canonical_text, @content_hash, NULL, @access_token,
-      NULL, NULL, @amount_cents, @currency
-    )
+  const stmt = getDb().prepare(`
+INSERT INTO submissions (
+  id,
+  registry_no,
+  created_at,
+  issued_at,
+  status,
+  record_class,
+  title,
+  holder_name,
+  holder_email,
+  canonical_text,
+  content_hash,
+  pdf_object_key,
+  seal_object_key,
+  verify_slug,
+  access_token,
+  stripe_session_id,
+  stripe_payment_intent,
+  amount_cents,
+  currency
+) VALUES (
+  @id,
+  @registry_no,
+  @created_at,
+  NULL,
+  'draft',
+  @record_class,
+  @title,
+  @holder_name,
+  @holder_email,
+  @canonical_text,
+  @content_hash,
+  NULL,
+  NULL,
+  @verify_slug,
+  @access_token,
+  NULL,
+  NULL,
+  @amount_cents,
+  @currency
+);
   `);
 
   stmt.run({
     id: args.id,
     registry_no: registryNo,
+    record_class: args.recordClass ?? "GENESIS",
     created_at: now,
     title: args.title,
     holder_name: args.holderName,
     holder_email: args.holderEmail,
     canonical_text: args.canonicalText,
     content_hash: args.contentHash,
+    verify_slug: args.id,
     access_token: args.accessToken,
     amount_cents: args.amountCents,
     currency: args.currency
@@ -147,31 +206,56 @@ export function dbCreateDraft(args: {
 }
 
 export function dbSetStripeSession(id: string, stripeSessionId: string) {
-  db.prepare(`UPDATE submissions SET stripe_session_id = ? WHERE id = ?`).run(stripeSessionId, id);
+  getDb().prepare(`UPDATE submissions SET stripe_session_id = ? WHERE id = ?`).run(stripeSessionId, id);
 }
 
-export function dbMarkPaidBySession(stripeSessionId: string, paymentIntent: string) {
-  db.prepare(`UPDATE submissions SET status = 'paid', stripe_payment_intent = ? WHERE stripe_session_id = ?`)
-    .run(paymentIntent, stripeSessionId);
+export function dbMarkPaidBySession(
+  stripeSessionId: string,
+  paymentIntent: string,
+  recordClass: RecordClass
+) {
+  getDb().prepare(
+    `UPDATE submissions
+       SET status = 'paid',
+           stripe_payment_intent = ?,
+           record_class = ?
+     WHERE stripe_session_id = ?`
+  ).run(paymentIntent, recordClass, stripeSessionId);
 }
 
-export function dbMarkIssued(id: string, pdfPath: string) {
-  const issuedAt = new Date().toISOString();
-  db.prepare(`UPDATE submissions SET status = 'issued', issued_at = ?, pdf_path = ? WHERE id = ?`)
-    .run(issuedAt, pdfPath, id);
+export function dbMarkIssued(
+  id: string,
+  issuedAtUtc: string,
+  pdfObjectKey: string,
+  sealObjectKey?: string | null,
+  receiptPdfKey?: string | null
+) {
+  getDb().prepare(`
+    UPDATE submissions
+    SET status = 'issued',
+        issued_at = @issued_at,
+        pdf_object_key = @pdf_object_key,
+        seal_object_key = @seal_object_key,
+        receipt_pdf_key = COALESCE(@receipt_pdf_key, @pdf_object_key)
+    WHERE id = @id
+  `).run({
+    id,
+    issued_at: issuedAtUtc,
+    pdf_object_key: pdfObjectKey,
+    seal_object_key: sealObjectKey ?? null,
+    receipt_pdf_key: receiptPdfKey ?? null,
+  });
 }
 
 export function dbGetSubmission(id: string): SubmissionRow | null {
-  const row = db.prepare(`SELECT * FROM submissions WHERE id = ?`).get(id) as SubmissionRow | undefined;
+  const row = getDb().prepare(`SELECT * FROM submissions WHERE id = ?`).get(id) as SubmissionRow | undefined;
   return row ?? null;
 }
 
 export function dbGetByStripeSession(stripeSessionId: string): SubmissionRow | null {
-  const row = db.prepare(`SELECT * FROM submissions WHERE stripe_session_id = ?`).get(stripeSessionId) as SubmissionRow | undefined;
+  const row = getDb().prepare(`SELECT * FROM submissions WHERE stripe_session_id = ?`).get(stripeSessionId) as SubmissionRow | undefined;
   return row ?? null;
 }
-
-// --- MVP-2 Sealed Artifacts ---
 
 // --- MVP-2 Sealed Artifacts ---
 
@@ -185,10 +269,11 @@ export type ArtifactRow = {
   issued_at: string;
   storage_key: string;
   receipt_pdf_key: string;
+  thought_caption: string | null;
 };
 
 export function dbLastArtifactForParent(parentId: string): ArtifactRow | null {
-  const row = db.prepare(`
+  const row = getDb().prepare(`
     SELECT * FROM artifacts
     WHERE parent_certificate_id = ?
     ORDER BY issued_at DESC
@@ -199,19 +284,24 @@ export function dbLastArtifactForParent(parentId: string): ArtifactRow | null {
 }
 
 export function dbInsertArtifact(a: ArtifactRow) {
-  db.prepare(`
+  getDb().prepare(`
     INSERT INTO artifacts (
       id, parent_certificate_id, artifact_type, original_filename,
-      canonical_hash, chain_hash, issued_at, storage_key, receipt_pdf_key
+      canonical_hash, chain_hash, issued_at, storage_key, receipt_pdf_key,
+      thought_caption
     ) VALUES (
       @id, @parent_certificate_id, @artifact_type, @original_filename,
-      @canonical_hash, @chain_hash, @issued_at, @storage_key, @receipt_pdf_key
+      @canonical_hash, @chain_hash, @issued_at, @storage_key, @receipt_pdf_key,
+      @thought_caption
     )
-  `).run(a);
+  `).run({
+    ...a,
+    thought_caption: a.thought_caption ?? null,
+  });
 }
 
 export function dbArtifactsForParent(parentId: string): ArtifactRow[] {
-  const rows = db.prepare(`
+  const rows = getDb().prepare(`
     SELECT * FROM artifacts
     WHERE parent_certificate_id = ?
     ORDER BY issued_at ASC
@@ -221,12 +311,12 @@ export function dbArtifactsForParent(parentId: string): ArtifactRow[] {
 }
 
 export function dbGetArtifact(id: string): ArtifactRow | null {
-  const row = db.prepare(`SELECT * FROM artifacts WHERE id = ?`).get(id) as ArtifactRow | undefined;
+  const row = getDb().prepare(`SELECT * FROM artifacts WHERE id = ?`).get(id) as ArtifactRow | undefined;
   return row ?? null;
 }
 
 export function dbArtifactById(id: string): ArtifactRow | null {
-  const row = db
+  const row = getDb()
     .prepare(`SELECT * FROM artifacts WHERE id = ?`)
     .get(id) as ArtifactRow | undefined;
 
@@ -243,7 +333,7 @@ export type DailyRootRow = {
 };
 
 export function dbGetDailyRoot(dayUtc: string): DailyRootRow | null {
-  const row = db.prepare(`SELECT * FROM daily_roots WHERE day_utc = ?`).get(dayUtc) as DailyRootRow | undefined;
+  const row = getDb().prepare(`SELECT * FROM daily_roots WHERE day_utc = ?`).get(dayUtc) as DailyRootRow | undefined;
   return row ?? null;
 }
 
@@ -253,7 +343,7 @@ export function dbUpsertDailyRoot(r: {
   leaf_count: number;
   computed_at: string;
 }) {
-  db.prepare(`
+  getDb().prepare(`
     INSERT INTO daily_roots (day_utc, root_hash, leaf_count, computed_at)
     VALUES (?, ?, ?, ?)
     ON CONFLICT(day_utc) DO UPDATE SET
@@ -264,9 +354,25 @@ export function dbUpsertDailyRoot(r: {
 }
 
 export function dbMarkDailyRootPublished(dayUtc: string, publishedUrl: string) {
-  db.prepare(`
+  getDb().prepare(`
     UPDATE daily_roots
     SET published_at = ?, published_url = ?
     WHERE day_utc = ?
   `).run(new Date().toISOString(), publishedUrl, dayUtc);
+}
+
+export function dbSetReceiptPdfKey(submissionId: string, receiptPdfKey: string) {
+  getDb().prepare(`
+    UPDATE submissions
+    SET receipt_pdf_key = ?
+    WHERE id = ?
+  `).run(receiptPdfKey, submissionId);
+}
+
+export function dbSetChainPdfKey(submissionId: string, chainPdfKey: string) {
+  getDb().prepare(`
+    UPDATE submissions
+    SET chain_pdf_key = ?
+    WHERE id = ?
+  `).run(chainPdfKey, submissionId);
 }
