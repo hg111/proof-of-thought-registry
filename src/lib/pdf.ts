@@ -93,15 +93,15 @@ export async function buildCertificatePdf(args: {
   artifactHash?: string | null;
   chainHash?: string | null;
 
-  
+
 }): Promise<Buffer> {
   const pdfDoc = await PDFDocument.create();
   pdfDoc.registerFontkit(fontkit);
-  
+
   const PAGE_W = 612;
   const PAGE_H = 792;
 
-    // Bottom reserved zone constants
+  // Bottom reserved zone constants
   const SEAL_TARGET_W = 120;
   const SEAL_PAD_TOP = 10;          // space between content box and bottom zone
   const SEAL_PAD_RIGHT = 0;         // (you already use margin on right)
@@ -110,13 +110,20 @@ export async function buildCertificatePdf(args: {
   const LIM_MAX_CHARS = 110;        // you already used 110 in wrapText
   const LIM_PAD_TOP = 6;            // small breathing room above limitation text
 
+  // -------------------------
+  // Embed assets (Fonts / Images) ONCE at the top level
+  // -------------------------
   //const fontSerif = await pdfDoc.embedFont("Times-Roman");
   //const fontSerifBold = await pdfDoc.embedFont("Times-Bold");
   const fontSerif = await pdfDoc.embedFont(fontRegularBytes);
   const fontSerifBold = await pdfDoc.embedFont(fontBoldBytes);
   const fontMono = await pdfDoc.embedFont("Courier");
   //const fontArialBold = await pdfDoc.embedFont("Arial Bold");
-  
+
+  let sharedSealImg: any = null;
+  if (args.sealPngBytes && args.sealPngBytes.length > 0) {
+    sharedSealImg = await pdfDoc.embedPng(args.sealPngBytes);
+  }
 
   const margin = 54;
 
@@ -127,15 +134,24 @@ export async function buildCertificatePdf(args: {
   const headerLineH = 12;
   const headerPadBelow = 10;
 
-    // -------------------------
+  // -------------------------
   // Vertical layout safety (prevents seal from trimming text)
   // -------------------------
-  const sealBoxH = args.sealPngBytes ? 140 : 0;   // match your actual seal render height (+safe margin)
+  // match your actual seal render height (+safe margin)
+  // We use the shared image dimensions if available
+  let sealBoxH = 0;
+  if (sharedSealImg) {
+    const scale = SEAL_TARGET_W / sharedSealImg.width;
+    sealBoxH = sharedSealImg.height * scale; // roughly 140 usually
+  } else if (args.sealPngBytes) {
+    sealBoxH = 140; // fallback
+  }
+
   const bottomSafe = margin + sealBoxH + 16;     // margin + seal area + buffer
 
   // usable vertical span for text
   const yTop = PAGE_H - margin;                  // first writable y
- 
+
 
   function drawCompactHeader(page: any, meta: HeaderMeta) {
     let y = PAGE_H - margin;
@@ -215,21 +231,20 @@ export async function buildCertificatePdf(args: {
   drawLine();
   y -= 18;
 
-      // Optional micro-seal on page 1 (top-right), aligned to the custodian line baseline
-  if (args.sealPngBytes && args.sealPngBytes.length > 0) {
-    const sealImg = await pdfDoc.embedPng(args.sealPngBytes);
+  // Optional micro-seal on page 1 (top-right), aligned to the custodian line baseline
+  if (sharedSealImg) {
     const targetW = 120;
-    const scale = targetW / sealImg.width;
-    const drawW = sealImg.width * scale;
-    const drawH = sealImg.height * scale;
+    const scale = targetW / sharedSealImg.width;
+    const drawW = sharedSealImg.width * scale;
+    const drawH = sharedSealImg.height * scale;
 
     const xSeal = width - margin - drawW;
     // top edge of seal aligns to bottom letters (baseline) of custodian line
     const ySeal = yCustodianBaseline - drawH;
 
-    page1.drawImage(sealImg, { x: xSeal, y: ySeal, width: drawW, height: drawH });
+    page1.drawImage(sharedSealImg, { x: xSeal, y: ySeal, width: drawW, height: drawH });
   }
-  
+
   drawText("Certificate of Conception & Possession", { font: fontSerifBold, size: 13 });
   y -= 18;
 
@@ -268,7 +283,7 @@ export async function buildCertificatePdf(args: {
     label("HOLDER (DECLARANT)");
     body(
       `${args.holderName ? `Name: ${args.holderName}` : "Name: —"}\n` +
-        `${args.holderEmail ? `Email: ${args.holderEmail}` : "Email: —"}`
+      `${args.holderEmail ? `Email: ${args.holderEmail}` : "Email: —"}`
     );
   }
 
@@ -304,7 +319,7 @@ export async function buildCertificatePdf(args: {
     y -= 14;
   }
 
-    // ------------------------------------------------------------
+  // ------------------------------------------------------------
   // Bottom reserve (limitation text only — seal is now top-right)
   // ------------------------------------------------------------
   const lim =
@@ -397,18 +412,18 @@ export async function buildCertificatePdf(args: {
 
   // If seal exists, compute its drawn height (same math you use when drawing it)
   let sealBlockH = 0;
-  if (args.sealPngBytes && args.sealPngBytes.length > 0) {
-    const sealImg = await pdfDoc.embedPng(args.sealPngBytes);
-    const scale = SEAL_TARGET_W / sealImg.width;
-    const drawH = sealImg.height * scale;
+  if (sharedSealImg) {
+    // const sealImg = await pdfDoc.embedPng(args.sealPngBytes); // already embedded in sharedSealImg
+    const scale = SEAL_TARGET_W / sharedSealImg.width;
+    const drawH = sharedSealImg.height * scale;
     sealBlockH = drawH; // no extra padding yet
   }
 
-// The reserved zone must accommodate BOTH limitation text and seal.
-// They can overlap horizontally, but vertically we must reserve the max.
+  // The reserved zone must accommodate BOTH limitation text and seal.
+  // They can overlap horizontally, but vertically we must reserve the max.
   const bottomReserveH = Math.max(limBlockH, sealBlockH) + SEAL_PAD_TOP;
   const yBottom = margin + bottomReserveH;
-  
+
   const limTopY = bottomReserveY - 6;
   // page1.drawLine({
   //   start: { x: margin, y: limTopY },
@@ -425,7 +440,7 @@ export async function buildCertificatePdf(args: {
   // -------------------------
   // PAGES 2+ (only if cover didn’t fit the submission)
   // -------------------------
-    // -------------------------
+  // -------------------------
   // PAGES 2+ (only if cover didn’t fit the submission)
   // -------------------------
   if (needsContinuation) {
