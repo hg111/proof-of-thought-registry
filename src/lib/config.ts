@@ -28,7 +28,7 @@ function req(name: string): string {
 export const config = {
   appBaseUrl: opt("APP_BASE_URL", "http://localhost:3333"),
   dataDir: opt("DATA_DIR", path.join(process.cwd(), "data")),
-  maxTextChars: optInt("MAX_TEXT_CHARS", 20000),
+  maxTextChars: optInt("MAX_TEXT_CHARS", 250000),
 };
 
 /* ---------- Stripe authority config (FAIL FAST - LAZY) ---------- */
