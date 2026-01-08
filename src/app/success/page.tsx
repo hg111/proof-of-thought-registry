@@ -73,30 +73,74 @@ export default async function SuccessPage({ searchParams }: { searchParams: { id
 
       <Divider />
 
-      <Button href={`/vault?id=${encodeURIComponent(sub.id)}&t=${encodeURIComponent(t)}`}>
+      <Button
+        href={`/vault?id=${encodeURIComponent(sub.id)}&t=${encodeURIComponent(t)}`}
+        tooltip={
+          <>
+            <strong>Privately view your sealed Thought under custodial lock</strong> —<br />
+            without downloading or exposing the record.
+          </>
+        }
+      >
         Preview in Vault
       </Button>
 
-      <Button href={`/api/download/${encodeURIComponent(sub.id)}?t=${encodeURIComponent(t)}`}>
+      <Button
+        href={`/api/download/${encodeURIComponent(sub.id)}?t=${encodeURIComponent(t)}`}
+        tooltip={
+          <>
+            <strong>This is your original Proof-of-Thought certificate.</strong><br />
+            It establishes when your idea was first sealed <br />under third-party cryptographic custody.
+          </>
+        }
+      >
         Download PDF
       </Button>
       {artifacts.length > 0 ? (
-        <Button href={`/api/chain/${encodeURIComponent(sub.id)}/download?t=${encodeURIComponent(t)}`}>
+        <Button
+          href={`/api/chain/${encodeURIComponent(sub.id)}/download?t=${encodeURIComponent(t)}`}
+          tooltip={
+            <>
+              <strong>This is the full cryptographic lineage of your Thought</strong> —<br />
+              showing how your idea evolved over time with provable continuity.
+            </>
+          }
+        >
           Download Chain PDF
         </Button>
       ) : null}
 
 
-      <Button href={`/api/control-slip/${encodeURIComponent(sub.id)}?t=${encodeURIComponent(t)}`}>
+      <Button
+        href={`/api/control-slip/${encodeURIComponent(sub.id)}?t=${encodeURIComponent(t)}`}
+        tooltip={
+          <>
+            <strong>This slip is your custody recovery instrument.</strong><br />
+            It allows you to reclaim, prove, and transfer this Thought chain<br /> even if the platform disappears.<br />
+            <span style={{ color: "#d32f2f" }}>Store it offline in a safe place.</span>
+          </>
+        }
+      >
         Download Control Slip
       </Button>
+      <CopyPrivateControlLink url={privateUrl} />
+
+
 
       {sub.record_class === "ENGRAVED" && sub.seal_object_key ? (
-        <p className="small" style={{ marginTop: 10 }}>
-          <a href={`/api/seal/${encodeURIComponent(sub.id)}/download?t=${encodeURIComponent(t)}`}>
-            Download Seal (PNG)
-          </a>
-        </p>
+        <div style={{ marginTop: 10 }}>
+          <Button
+            href={`/api/seal/${encodeURIComponent(sub.id)}/download?t=${encodeURIComponent(t)}`}
+            tooltip={
+              <>
+                <strong>Download a high-resolution evidentiary seal for this certificate.</strong><br />
+                The seal encodes key verification details (e.g., hashes and identifiers)<br /> for printing, engraving, or archival use.
+              </>
+            }
+          >
+            🔵 Download Seal (PNG)
+          </Button>
+        </div>
       ) : sub.record_class === "ENGRAVED" ? (
         <SealPoller />
       ) : null}
@@ -143,7 +187,15 @@ export default async function SuccessPage({ searchParams }: { searchParams: { id
         </>
       )}
 
-      <Button href={`/success/add-artifact?id=${encodeURIComponent(sub.id)}&t=${encodeURIComponent(t)}`}>
+      <Button
+        href={`/success/add-artifact?id=${encodeURIComponent(sub.id)}&t=${encodeURIComponent(t)}`}
+        tooltip={
+          <>
+            <strong>Add a new sealed page to this Thought chain (image or PDF).</strong><br />
+            It will be timestamped, hashed, and permanently appended <br />as the next page in your chain.
+          </>
+        }
+      >
         ➕ Add sealed page
       </Button>
     </>
