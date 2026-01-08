@@ -73,6 +73,10 @@ export default async function SuccessPage({ searchParams }: { searchParams: { id
 
       <Divider />
 
+      <Button href={`/vault?id=${encodeURIComponent(sub.id)}&t=${encodeURIComponent(t)}`}>
+        Preview in Vault
+      </Button>
+
       <Button href={`/api/download/${encodeURIComponent(sub.id)}?t=${encodeURIComponent(t)}`}>
         Download PDF
       </Button>

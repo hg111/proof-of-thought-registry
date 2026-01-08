@@ -4,6 +4,7 @@ import fs from "fs";
 import path from "path";
 import { dbGetSubmission } from "@/lib/db";
 import { chainPdfPath } from "@/lib/chainPdf";
+import { config } from "@/lib/config";
 
 export const runtime = "nodejs";
 
@@ -24,13 +25,27 @@ export async function GET(req: NextRequest, ctx: { params: { id: string } }) {
     }
 
     const p = chainPdfPath(id);
-    const full = path.resolve(p);
+    let full = path.resolve(p);
 
     if (!fs.existsSync(full)) {
-      return NextResponse.json(
-        { error: `Chain PDF missing on disk at: ${full}` },
-        { status: 404 }
-      );
+      // Fallback: Check if we have the genesis PDF explicitly
+      const genesisKey = (sub as any).pdf_object_key;
+      if (genesisKey) {
+        const fallbackPath = path.join(config.dataDir, genesisKey);
+        if (fs.existsSync(fallbackPath)) {
+          full = fallbackPath;
+        } else {
+          return NextResponse.json(
+            { error: `Chain PDF missing AND Genesis PDF missing at: ${fallbackPath}` },
+            { status: 404 }
+          );
+        }
+      } else {
+        return NextResponse.json(
+          { error: `Chain PDF missing on disk at: ${full}` },
+          { status: 404 }
+        );
+      }
     }
 
     const stat = fs.statSync(full);
