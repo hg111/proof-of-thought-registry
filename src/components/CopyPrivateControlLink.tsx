@@ -1,10 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 export default function CopyPrivateControlLink({ url }: { url?: string }) {
     const [copied, setCopied] = useState(false);
     const [hovered, setHovered] = useState(false);
+    const [active, setActive] = useState(false);
+
+    // Logic for mobile long-press
+    const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const isLongPress = useRef(false);
 
     if (!url) return null;
 
@@ -14,11 +19,48 @@ export default function CopyPrivateControlLink({ url }: { url?: string }) {
         setTimeout(() => setCopied(false), 2000);
     };
 
+    const handleMouseEnter = () => {
+        if (window.matchMedia && window.matchMedia('(hover: hover)').matches) {
+            setHovered(true);
+        }
+    };
+    const handleMouseLeave = () => {
+        setHovered(false);
+        setActive(false);
+    };
+    const handleMouseDown = () => setActive(true);
+    const handleMouseUp = () => setActive(false);
+
+    // Touch handlers (Mobile)
+    const handleTouchStart = () => {
+        setActive(true);
+        isLongPress.current = false;
+        timerRef.current = setTimeout(() => {
+            isLongPress.current = true;
+            setHovered(true); // Show tooltip
+        }, 1000); // 1.0s long press
+    };
+
+    const handleTouchEnd = (e: React.TouchEvent) => {
+        setActive(false);
+        setHovered(false); // Hide tooltip on release
+
+        if (timerRef.current) {
+            clearTimeout(timerRef.current);
+            timerRef.current = null;
+        }
+
+        if (isLongPress.current) {
+            e.preventDefault(); // Prevent click action
+        }
+    };
+
     const buttonStyle: React.CSSProperties = {
-        border: "1px solid #bbb",
-        padding: "8px 12px",
+        border: hovered ? "1px solid #0000FF" : "1px solid #bbb",
+        padding: "0 12px",
+        height: "36px",
         borderRadius: 4,
-        background: "#fff",
+        background: active ? "#f2f2f2" : "#fff",
         color: "#000",
         textDecoration: "none",
         fontSize: 13,
@@ -26,8 +68,11 @@ export default function CopyPrivateControlLink({ url }: { url?: string }) {
         userSelect: "none",
         boxShadow: "-2px 3px 5px rgba(0,0,0,0.1)",
         transition: "all 0.1s ease",
-        marginRight: 10,
-        marginBottom: 10,
+        verticalAlign: "middle",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        boxSizing: "border-box",
     };
 
     const tooltipStyle: React.CSSProperties = {
@@ -50,12 +95,18 @@ export default function CopyPrivateControlLink({ url }: { url?: string }) {
     };
 
     return (
-        <div
-            style={{ position: "relative", display: "inline-block" }}
-            onMouseEnter={() => setHovered(true)}
-            onMouseLeave={() => setHovered(false)}
-        >
-            <button onClick={handleCopy} type="button" style={buttonStyle}>
+        <div style={{ position: "relative", display: "inline-block" }}>
+            <button
+                onClick={handleCopy}
+                type="button"
+                style={buttonStyle}
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
+                onMouseDown={handleMouseDown}
+                onMouseUp={handleMouseUp}
+                onTouchStart={handleTouchStart}
+                onTouchEnd={handleTouchEnd}
+            >
                 {copied ? "Copied" : "Copy Private Access Key"}
             </button>
 
