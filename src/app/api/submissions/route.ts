@@ -5,7 +5,7 @@ import { newCertificateId } from "@/lib/ids";
 import { newAccessToken } from "@/lib/tokens";
 import { dbCreateDraft } from "@/lib/db";
 import { safeText, isProbablyEmail } from "@/lib/safety";
-import {  RecordClass, priceForRecordClass } from "@/lib/records";
+import { RecordClass, priceForRecordClass } from "@/lib/records";
 
 
 export const runtime = "nodejs";
@@ -15,7 +15,7 @@ export const runtime = "nodejs";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    
+
     const recordClass = (body?.recordClass as RecordClass) ?? "GENESIS";
     const amountCents = priceForRecordClass(recordClass);
     const currency = "usd";
@@ -32,7 +32,7 @@ export async function POST(req: Request) {
     const id = newCertificateId();
     const token = newAccessToken();
 
- 
+
 
     dbCreateDraft({
       id,
@@ -45,6 +45,7 @@ export async function POST(req: Request) {
       amountCents,
       currency,
       recordClass,
+      isPublic: !!body?.isPublic
     });
 
     return NextResponse.json({ id, token });

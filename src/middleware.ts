@@ -1,4 +1,4 @@
- 
+
 
 // src/middleware.ts
 import { NextResponse } from "next/server";
@@ -22,6 +22,10 @@ function isPublicPath(pathname: string) {
   // ✅ Gate page + gate form action must be public
   if (pathname === "/gate") return true;
   if (pathname === "/api/private-access") return true;
+
+  // Public Ledger
+  if (pathname.startsWith("/public-ledger")) return true;
+  if (pathname.startsWith("/api/public-ledger")) return true;
 
   // Everything else is gated (INCLUDING "/")
   return false;

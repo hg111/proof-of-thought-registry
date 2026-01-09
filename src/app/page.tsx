@@ -38,7 +38,7 @@ export default function Home() {
         <div className="card">
           <div className="cardTitle">What this is</div>
           <ul className="list">
-            <li>A formal Certificate of conception &amp; possession</li>
+            <li>A formal certificate of conception &amp; possession</li>
             <li>A private custody vault that preserves your sealed ideas </li>
             <li>A cryptographic chain records your idea as it evolves over time</li>
           </ul>

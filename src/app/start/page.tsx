@@ -13,6 +13,7 @@ export default function StartPage() {
   const [holderEmail, setHolderEmail] = useState("");
   const [text, setText] = useState("");
   const [recordClass, setRecordClass] = useState<RecordClass>("GENESIS");
+  const [isPublic, setIsPublic] = useState(false);
 
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -25,7 +26,7 @@ export default function StartPage() {
       const r1 = await fetch("/api/submissions", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ title, holderName, holderEmail, text, recordClass }),
+        body: JSON.stringify({ title, holderName, holderEmail, text, recordClass, isPublic }),
       });
       const j1 = await r1.json();
       if (!r1.ok) throw new Error(j1?.error || "Failed to create submission.");
@@ -108,6 +109,21 @@ export default function StartPage() {
         <option value="MINTED">Minted Instrument — $49 (Formal serialed instrument)</option>
         <option value="ENGRAVED">Engraved Instrument — $99 (Instrument + engraved seal)</option>
       </select>
+
+      <div style={{ marginBottom: 20 }}>
+        <label className="flex items-center gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={isPublic}
+            onChange={(e) => setIsPublic(e.target.checked)}
+            className="w-4 h-4 border border-black rounded-sm accent-black"
+          />
+          <span className="text-sm font-medium">List this chain on the Public Ledger</span>
+        </label>
+        <p className="text-xs text-gray-500 mt-1 ml-6">
+          This makes your Chain ID and Seal Status public. Your content remains private.
+        </p>
+      </div>
 
       <Button onClick={onSubmit} disabled={busy || text.trim().length === 0}>
         {busy ? "Processing…" : "Continue to Payment"}

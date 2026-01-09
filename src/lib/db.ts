@@ -23,6 +23,7 @@ type SubmissionRow = {
   registry_no: number | null;
   record_class: RecordClass;
   seal_object_key: string | null;
+  is_public: number; // 0 or 1
 };
 
 
@@ -99,6 +100,36 @@ function ensure() {
     );
     CREATE INDEX IF NOT EXISTS idx_daily_roots_computed_at ON daily_roots(computed_at);
   `);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS public_chains(
+    chain_id TEXT PRIMARY KEY,
+    genesis_certificate_id TEXT UNIQUE NOT NULL,
+    genesis_issued_at_utc TEXT,
+    sealed_count INTEGER DEFAULT 1,
+    last_seal_at_utc TEXT,
+    custody_status TEXT DEFAULT 'Active',
+    is_public INTEGER DEFAULT 0,
+    created_at_utc TEXT NOT NULL,
+    updated_at_utc TEXT NOT NULL
+  );
+    CREATE INDEX IF NOT EXISTS idx_public_chains_genesis ON public_chains(genesis_issued_at_utc);
+    CREATE INDEX IF NOT EXISTS idx_public_chains_last_seal ON public_chains(last_seal_at_utc);
+  `);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS ledger_anchors(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    window_start_utc TEXT,
+    window_end_utc TEXT,
+    records_committed INTEGER,
+    root_hash_hex TEXT NOT NULL,
+    network TEXT DEFAULT 'bitcoin',
+    txid TEXT,
+    explorer_url TEXT,
+    status TEXT DEFAULT 'pending',
+    created_at_utc TEXT NOT NULL
+  );
+  `);
+
   // --- MIGRATION: registry_no on submissions ---
   const cols = db.prepare(`PRAGMA table_info(submissions)`).all() as Array<{ name: string }>;
   const colNames = new Set(cols.map(c => c.name));
@@ -108,42 +139,42 @@ function ensure() {
   const hasThoughtCaption = aCols.some(c => c.name === "thought_caption");
 
   if (!hasThoughtCaption) {
-    db.exec(`ALTER TABLE artifacts ADD COLUMN thought_caption TEXT;`);
+    db.exec(`ALTER TABLE artifacts ADD COLUMN thought_caption TEXT; `);
   }
 
   if (!colNames.has("registry_no")) {
-    db.exec(`ALTER TABLE submissions ADD COLUMN registry_no INTEGER;`);
+    db.exec(`ALTER TABLE submissions ADD COLUMN registry_no INTEGER; `);
 
     // Backfill existing rows in created_at order (stable enough for MVP)
     const rows = db.prepare(`SELECT id FROM submissions ORDER BY created_at ASC`).all() as Array<{ id: string }>;
-    const upd = db.prepare(`UPDATE submissions SET registry_no = ? WHERE id = ?`);
+    const upd = db.prepare(`UPDATE submissions SET registry_no = ? WHERE id = ? `);
     rows.forEach((r, i) => upd.run(i + 1, r.id));
 
-    db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_submissions_registry_no ON submissions(registry_no);`);
+    db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_submissions_registry_no ON submissions(registry_no); `);
   }
 
   // --- COMPREHENSIVE MIGRATIONS ---
   if (!colNames.has("record_class")) {
-    db.exec(`ALTER TABLE submissions ADD COLUMN record_class TEXT DEFAULT 'GENESIS';`);
+    db.exec(`ALTER TABLE submissions ADD COLUMN record_class TEXT DEFAULT 'GENESIS'; `);
   }
   if (!colNames.has("pdf_object_key")) {
-    // If we have pdf_path, we might want to migrate it, or just add the new column.
-    // For now, assuming pdf_path is abandoned or empty in PROD, simply add the new one.
-    db.exec(`ALTER TABLE submissions ADD COLUMN pdf_object_key TEXT;`);
+    db.exec(`ALTER TABLE submissions ADD COLUMN pdf_object_key TEXT; `);
   }
   if (!colNames.has("seal_object_key")) {
-    db.exec(`ALTER TABLE submissions ADD COLUMN seal_object_key TEXT;`);
+    db.exec(`ALTER TABLE submissions ADD COLUMN seal_object_key TEXT; `);
   }
   if (!colNames.has("verify_slug")) {
-    db.exec(`ALTER TABLE submissions ADD COLUMN verify_slug TEXT;`);
-    // Backfill verify_slug = id
-    db.exec(`UPDATE submissions SET verify_slug = id WHERE verify_slug IS NULL;`);
+    db.exec(`ALTER TABLE submissions ADD COLUMN verify_slug TEXT; `);
+    db.exec(`UPDATE submissions SET verify_slug = id WHERE verify_slug IS NULL; `);
   }
   if (!colNames.has("receipt_pdf_key")) {
-    db.exec(`ALTER TABLE submissions ADD COLUMN receipt_pdf_key TEXT;`);
+    db.exec(`ALTER TABLE submissions ADD COLUMN receipt_pdf_key TEXT; `);
   }
   if (!colNames.has("chain_pdf_key")) {
-    db.exec(`ALTER TABLE submissions ADD COLUMN chain_pdf_key TEXT;`);
+    db.exec(`ALTER TABLE submissions ADD COLUMN chain_pdf_key TEXT; `);
+  }
+  if (!colNames.has("is_public")) {
+    db.exec(`ALTER TABLE submissions ADD COLUMN is_public INTEGER DEFAULT 0; `);
   }
 
   return db;
@@ -171,53 +202,56 @@ export function dbCreateDraft(args: {
   amountCents: number;
   currency: string;
   recordClass?: RecordClass;
+  isPublic?: boolean;
 }) {
   const db = getDb();
   const next = getDb().prepare(`SELECT COALESCE(MAX(registry_no), 0) + 1 AS n FROM submissions`).get() as { n: number };
   const registryNo = next.n;
   const now = new Date().toISOString();
   const stmt = getDb().prepare(`
-INSERT INTO submissions (
-  id,
-  registry_no,
-  created_at,
-  issued_at,
-  status,
-  record_class,
-  title,
-  holder_name,
-  holder_email,
-  canonical_text,
-  content_hash,
-  pdf_object_key,
-  seal_object_key,
-  verify_slug,
-  access_token,
-  stripe_session_id,
-  stripe_payment_intent,
-  amount_cents,
-  currency
-) VALUES (
-  @id,
-  @registry_no,
-  @created_at,
-  NULL,
-  'draft',
-  @record_class,
-  @title,
-  @holder_name,
-  @holder_email,
-  @canonical_text,
-  @content_hash,
-  NULL,
-  NULL,
-  @verify_slug,
-  @access_token,
-  NULL,
-  NULL,
-  @amount_cents,
-  @currency
-);
+INSERT INTO submissions(
+    id,
+    registry_no,
+    created_at,
+    issued_at,
+    status,
+    record_class,
+    title,
+    holder_name,
+    holder_email,
+    canonical_text,
+    content_hash,
+    pdf_object_key,
+    seal_object_key,
+    verify_slug,
+    access_token,
+    stripe_session_id,
+    stripe_payment_intent,
+    amount_cents,
+    currency,
+    is_public
+  ) VALUES(
+    @id,
+    @registry_no,
+    @created_at,
+    NULL,
+    'draft',
+    @record_class,
+    @title,
+    @holder_name,
+    @holder_email,
+    @canonical_text,
+    @content_hash,
+    NULL,
+    NULL,
+    @verify_slug,
+    @access_token,
+    NULL,
+    NULL,
+    @amount_cents,
+    @currency,
+    @is_public
+  );
   `);
 
   stmt.run({
@@ -233,12 +267,13 @@ INSERT INTO submissions (
     verify_slug: args.id,
     access_token: args.accessToken,
     amount_cents: args.amountCents,
-    currency: args.currency
+    currency: args.currency,
+    is_public: args.isPublic ? 1 : 0
   });
 }
 
 export function dbSetStripeSession(id: string, stripeSessionId: string) {
-  getDb().prepare(`UPDATE submissions SET stripe_session_id = ? WHERE id = ?`).run(stripeSessionId, id);
+  getDb().prepare(`UPDATE submissions SET stripe_session_id = ? WHERE id = ? `).run(stripeSessionId, id);
 }
 
 export function dbMarkPaidBySession(
@@ -249,9 +284,9 @@ export function dbMarkPaidBySession(
   getDb().prepare(
     `UPDATE submissions
        SET status = 'paid',
-           stripe_payment_intent = ?,
-           record_class = ?
-     WHERE stripe_session_id = ?`
+    stripe_payment_intent = ?,
+    record_class = ?
+      WHERE stripe_session_id = ? `
   ).run(paymentIntent, recordClass, stripeSessionId);
 }
 
@@ -265,27 +300,30 @@ export function dbMarkIssued(
   getDb().prepare(`
     UPDATE submissions
     SET status = 'issued',
-        issued_at = @issued_at,
-        pdf_object_key = @pdf_object_key,
-        seal_object_key = @seal_object_key,
-        receipt_pdf_key = COALESCE(@receipt_pdf_key, @pdf_object_key)
+    issued_at = @issued_at,
+    pdf_object_key = @pdf_object_key,
+    seal_object_key = @seal_object_key,
+    receipt_pdf_key = COALESCE(@receipt_pdf_key, @pdf_object_key)
     WHERE id = @id
-  `).run({
+    `).run({
     id,
     issued_at: issuedAtUtc,
     pdf_object_key: pdfObjectKey,
     seal_object_key: sealObjectKey ?? null,
     receipt_pdf_key: receiptPdfKey ?? null,
   });
+
+  // Update public index
+  dbUpdatePublicChainIndex(id);
 }
 
 export function dbGetSubmission(id: string): SubmissionRow | null {
-  const row = getDb().prepare(`SELECT * FROM submissions WHERE id = ?`).get(id) as SubmissionRow | undefined;
+  const row = getDb().prepare(`SELECT * FROM submissions WHERE id = ? `).get(id) as SubmissionRow | undefined;
   return row ?? null;
 }
 
 export function dbGetByStripeSession(stripeSessionId: string): SubmissionRow | null {
-  const row = getDb().prepare(`SELECT * FROM submissions WHERE stripe_session_id = ?`).get(stripeSessionId) as SubmissionRow | undefined;
+  const row = getDb().prepare(`SELECT * FROM submissions WHERE stripe_session_id = ? `).get(stripeSessionId) as SubmissionRow | undefined;
   return row ?? null;
 }
 
@@ -310,31 +348,34 @@ export function dbLastArtifactForParent(parentId: string): ArtifactRow | null {
     WHERE parent_certificate_id = ?
     ORDER BY issued_at DESC
     LIMIT 1
-  `).get(parentId) as ArtifactRow | undefined;
+    `).get(parentId) as ArtifactRow | undefined;
 
   return row ?? null;
 }
 
 export function dbInsertArtifact(a: ArtifactRow) {
   getDb().prepare(`
-    INSERT INTO artifacts (
+    INSERT INTO artifacts(
       id, parent_certificate_id, artifact_type, original_filename,
       canonical_hash, chain_hash, issued_at, storage_key, receipt_pdf_key,
       thought_caption
-    ) VALUES (
+    ) VALUES(
       @id, @parent_certificate_id, @artifact_type, @original_filename,
       @canonical_hash, @chain_hash, @issued_at, @storage_key, @receipt_pdf_key,
       @thought_caption
     )
-  `).run({
+      `).run({
     ...a,
     thought_caption: a.thought_caption ?? null,
   });
+
+  // Update public index
+  dbUpdatePublicChainIndex(a.parent_certificate_id);
 }
 
 export function dbArtifactsForParent(parentId: string): ArtifactRow[] {
   const rows = getDb().prepare(`
-    SELECT * FROM artifacts
+  SELECT * FROM artifacts
     WHERE parent_certificate_id = ?
     ORDER BY issued_at ASC
   `).all(parentId) as ArtifactRow[];
@@ -343,13 +384,13 @@ export function dbArtifactsForParent(parentId: string): ArtifactRow[] {
 }
 
 export function dbGetArtifact(id: string): ArtifactRow | null {
-  const row = getDb().prepare(`SELECT * FROM artifacts WHERE id = ?`).get(id) as ArtifactRow | undefined;
+  const row = getDb().prepare(`SELECT * FROM artifacts WHERE id = ? `).get(id) as ArtifactRow | undefined;
   return row ?? null;
 }
 
 export function dbArtifactById(id: string): ArtifactRow | null {
   const row = getDb()
-    .prepare(`SELECT * FROM artifacts WHERE id = ?`)
+    .prepare(`SELECT * FROM artifacts WHERE id = ? `)
     .get(id) as ArtifactRow | undefined;
 
   return row ?? null;
@@ -365,7 +406,7 @@ export type DailyRootRow = {
 };
 
 export function dbGetDailyRoot(dayUtc: string): DailyRootRow | null {
-  const row = getDb().prepare(`SELECT * FROM daily_roots WHERE day_utc = ?`).get(dayUtc) as DailyRootRow | undefined;
+  const row = getDb().prepare(`SELECT * FROM daily_roots WHERE day_utc = ? `).get(dayUtc) as DailyRootRow | undefined;
   return row ?? null;
 }
 
@@ -376,13 +417,13 @@ export function dbUpsertDailyRoot(r: {
   computed_at: string;
 }) {
   getDb().prepare(`
-    INSERT INTO daily_roots (day_utc, root_hash, leaf_count, computed_at)
-    VALUES (?, ?, ?, ?)
+    INSERT INTO daily_roots(day_utc, root_hash, leaf_count, computed_at)
+  VALUES(?, ?, ?, ?)
     ON CONFLICT(day_utc) DO UPDATE SET
-      root_hash=excluded.root_hash,
-      leaf_count=excluded.leaf_count,
-      computed_at=excluded.computed_at
-  `).run(r.day_utc, r.root_hash, r.leaf_count, r.computed_at);
+  root_hash = excluded.root_hash,
+    leaf_count = excluded.leaf_count,
+    computed_at = excluded.computed_at
+      `).run(r.day_utc, r.root_hash, r.leaf_count, r.computed_at);
 }
 
 export function dbMarkDailyRootPublished(dayUtc: string, publishedUrl: string) {
@@ -390,7 +431,7 @@ export function dbMarkDailyRootPublished(dayUtc: string, publishedUrl: string) {
     UPDATE daily_roots
     SET published_at = ?, published_url = ?
     WHERE day_utc = ?
-  `).run(new Date().toISOString(), publishedUrl, dayUtc);
+      `).run(new Date().toISOString(), publishedUrl, dayUtc);
 }
 
 export function dbSetReceiptPdfKey(submissionId: string, receiptPdfKey: string) {
@@ -398,7 +439,7 @@ export function dbSetReceiptPdfKey(submissionId: string, receiptPdfKey: string) 
     UPDATE submissions
     SET receipt_pdf_key = ?
     WHERE id = ?
-  `).run(receiptPdfKey, submissionId);
+      `).run(receiptPdfKey, submissionId);
 }
 
 export function dbSetChainPdfKey(submissionId: string, chainPdfKey: string) {
@@ -406,5 +447,125 @@ export function dbSetChainPdfKey(submissionId: string, chainPdfKey: string) {
     UPDATE submissions
     SET chain_pdf_key = ?
     WHERE id = ?
-  `).run(chainPdfKey, submissionId);
+      `).run(chainPdfKey, submissionId);
+}
+
+export type PublicChainRow = {
+  chain_id: string;
+  genesis_certificate_id: string;
+  genesis_issued_at_utc: string | null;
+  sealed_count: number;
+  last_seal_at_utc: string | null;
+  custody_status: string;
+  is_public: number;
+  created_at_utc: string;
+  updated_at_utc: string;
+};
+
+export type LedgerAnchorRow = {
+  id: number;
+  window_start_utc: string | null;
+  window_end_utc: string | null;
+  records_committed: number | null;
+  root_hash_hex: string;
+  network: string;
+  txid: string | null;
+  explorer_url: string | null;
+  status: string;
+  created_at_utc: string;
+};
+
+export function dbGetPublicChains(args: {
+  page: number;
+  limit: number;
+  sort?: "genesis_desc" | "genesis_asc" | "lastseal_desc";
+}): { items: PublicChainRow[]; total: number } {
+  const db = getDb();
+  const offset = (args.page - 1) * args.limit;
+
+  // Sorting logic
+  let orderBy = "genesis_issued_at_utc DESC";
+  if (args.sort === "genesis_asc") orderBy = "genesis_issued_at_utc ASC";
+  if (args.sort === "lastseal_desc") orderBy = "last_seal_at_utc DESC";
+
+  // Count total public chains
+  const countRow = db.prepare(`SELECT COUNT(*) as c FROM public_chains WHERE is_public = 1`).get() as { c: number };
+  const total = countRow.c;
+
+  // Fetch paginated rows
+  const items = db.prepare(`
+    SELECT * FROM public_chains 
+    WHERE is_public = 1 
+    ORDER BY ${orderBy}
+    LIMIT ? OFFSET ?
+      `).all(args.limit, offset) as PublicChainRow[];
+
+  return { items, total };
+}
+
+export function dbUpdatePublicChainIndex(submissionId: string) {
+  // This logic derives the aggregate state for a chain given *any* submission ID in that chain.
+  // 1. Find the genesis (root) for this submission.
+  // 2. Aggregate all artifacts/submissions in that lineage.
+  // 3. Update public_chains table.
+
+  const db = getDb();
+
+  // First, find the row to get genesis. 
+  // NOTE: For MVP, we assume submissionId IS the genesis or directly linked. 
+  // If we have multi-hop artifacts, we might need to walk up. 
+  // However, `dbArtifactsForParent` assumes 1 level of artifacts.
+
+  const sub = db.prepare(`SELECT * FROM submissions WHERE id = ? `).get(submissionId) as SubmissionRow | undefined;
+  if (!sub) return;
+
+  // Ideally, if this is an artifact, we'd find the parent. 
+  // But dbArtifactsForParent takes the parent ID.
+  // We'll simplisticly assume submissionId refers to the 'Certificate' (Genesis).
+  // If submissionId is actually an artifact ID, we need to handle that, but `submissions` table only stores certificates.
+  // Artifacts are in `artifacts` table. 
+
+  const genesisId = sub.id;
+  const genesisTime = sub.issued_at;
+  const isPublic = sub.is_public;
+
+  // Count artifacts
+  const artifactsCountRow = db.prepare(`SELECT COUNT(*) as c FROM artifacts WHERE parent_certificate_id = ? `).get(genesisId) as { c: number };
+  const sealedCount = 1 + artifactsCountRow.c; // Genesis + artifacts
+
+  // Find last seal time
+  const lastArtifact = db.prepare(`SELECT issued_at FROM artifacts WHERE parent_certificate_id = ? ORDER BY issued_at DESC LIMIT 1`).get(genesisId) as { issued_at: string } | undefined;
+  const lastSeal = lastArtifact ? lastArtifact.issued_at : genesisTime;
+
+  const chainId = formatRegistryNo(sub.registry_no); // "R-..."
+  const now = new Date().toISOString();
+
+  // Upsert into public_chains
+  db.prepare(`
+    INSERT INTO public_chains(
+        chain_id, genesis_certificate_id, genesis_issued_at_utc, sealed_count,
+        last_seal_at_utc, custody_status, is_public, created_at_utc, updated_at_utc
+      ) VALUES(
+        @chain_id, @genesis_certificate_id, @genesis_issued_at_utc, @sealed_count,
+        @last_seal_at_utc, 'Active', @is_public, @now, @now
+      )
+    ON CONFLICT(chain_id) DO UPDATE SET
+      sealed_count = excluded.sealed_count,
+    last_seal_at_utc = excluded.last_seal_at_utc,
+    is_public = excluded.is_public,
+    updated_at_utc = excluded.updated_at_utc
+      `).run({
+    chain_id: chainId,
+    genesis_certificate_id: genesisId,
+    genesis_issued_at_utc: genesisTime,
+    sealed_count: sealedCount,
+    last_seal_at_utc: lastSeal,
+    is_public: isPublic,
+    now: now
+  });
+}
+
+export function dbGetLatestAnchor(): LedgerAnchorRow | null {
+  const row = getDb().prepare(`SELECT * FROM ledger_anchors ORDER BY created_at_utc DESC LIMIT 1`).get() as LedgerAnchorRow | undefined;
+  return row ?? null;
 }
