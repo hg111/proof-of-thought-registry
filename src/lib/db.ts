@@ -82,6 +82,9 @@ function ensure() {
       issued_at TEXT NOT NULL,
       storage_key TEXT NOT NULL,
       receipt_pdf_key TEXT NOT NULL,
+      thought_caption TEXT,
+      mime_type TEXT,
+      size_bytes INTEGER,
       FOREIGN KEY(parent_certificate_id) REFERENCES submissions(id)
     );
 
@@ -118,6 +121,7 @@ function ensure() {
   db.exec(`
     CREATE TABLE IF NOT EXISTS ledger_anchors(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sequence INTEGER, -- Monotonic Anchor ID (v1 Protocol)
     window_start_utc TEXT,
     window_end_utc TEXT,
     records_committed INTEGER,
@@ -134,12 +138,25 @@ function ensure() {
   const cols = db.prepare(`PRAGMA table_info(submissions)`).all() as Array<{ name: string }>;
   const colNames = new Set(cols.map(c => c.name));
 
+  // --- MIGRATION: sequence on ledger_anchors ---
+  const laCols = db.prepare(`PRAGMA table_info(ledger_anchors)`).all() as Array<{ name: string }>;
+  const laHasSequence = laCols.some(c => c.name === "sequence");
+  if (!laHasSequence) {
+    db.prepare(`ALTER TABLE ledger_anchors ADD COLUMN sequence INTEGER`).run();
+  }
+
   // --- MIGRATION: thought_caption on artifacts ---
   const aCols = db.prepare(`PRAGMA table_info(artifacts)`).all() as Array<{ name: string }>;
   const hasThoughtCaption = aCols.some(c => c.name === "thought_caption");
 
   if (!hasThoughtCaption) {
     db.exec(`ALTER TABLE artifacts ADD COLUMN thought_caption TEXT; `);
+  }
+
+  const hasMimeType = aCols.some(c => c.name === "mime_type");
+  if (!hasMimeType) {
+    db.exec(`ALTER TABLE artifacts ADD COLUMN mime_type TEXT;`);
+    db.exec(`ALTER TABLE artifacts ADD COLUMN size_bytes INTEGER;`);
   }
 
   if (!colNames.has("registry_no")) {
@@ -340,6 +357,8 @@ export type ArtifactRow = {
   storage_key: string;
   receipt_pdf_key: string;
   thought_caption: string | null;
+  mime_type: string | null;
+  size_bytes: number | null;
 };
 
 export function dbLastArtifactForParent(parentId: string): ArtifactRow | null {
@@ -358,15 +377,17 @@ export function dbInsertArtifact(a: ArtifactRow) {
     INSERT INTO artifacts(
       id, parent_certificate_id, artifact_type, original_filename,
       canonical_hash, chain_hash, issued_at, storage_key, receipt_pdf_key,
-      thought_caption
+      thought_caption, mime_type, size_bytes
     ) VALUES(
       @id, @parent_certificate_id, @artifact_type, @original_filename,
       @canonical_hash, @chain_hash, @issued_at, @storage_key, @receipt_pdf_key,
-      @thought_caption
+      @thought_caption, @mime_type, @size_bytes
     )
       `).run({
     ...a,
     thought_caption: a.thought_caption ?? null,
+    mime_type: a.mime_type ?? null,
+    size_bytes: a.size_bytes ?? null
   });
 
   // Update public index

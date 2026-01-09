@@ -181,7 +181,7 @@ export default async function SuccessPage({ searchParams }: { searchParams: { id
           <Divider />
           {artifacts.map((a, idx) => (
             <div key={a.id} style={{ marginBottom: 14 }}>
-              <MonoBlock label={`Page ${idx + 2} — Sealed Image`} value={`${a.original_filename}`} />
+              <MonoBlock label={`Page ${idx + 2} — Sealed Attachment`} value={`${a.original_filename}`} />
               {a.thought_caption ? (
                 <p className="small" style={{ marginTop: 6, fontStyle: "italic" }}>
                   Thought Note: {a.thought_caption}
@@ -190,7 +190,10 @@ export default async function SuccessPage({ searchParams }: { searchParams: { id
               <MonoBlock label="Issued (UTC)" value={fmtUtcSafe(a.issued_at)} />
               <MonoBlock label="Canonical hash (SHA-256)" value={a.canonical_hash} />
               <MonoBlock label="Chain hash" value={a.chain_hash} />
-              <div style={{ marginTop: 8 }}>
+              <div style={{ marginTop: 8, display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                <Button href={`/vault?id=${encodeURIComponent(a.id)}&t=${encodeURIComponent(t)}`}>
+                  Preview in Vault
+                </Button>
                 <Button href={`/api/artifacts/${encodeURIComponent(a.id)}/download?t=${encodeURIComponent(t)}`}>
                   Download sealed receipt (PDF)
                 </Button>

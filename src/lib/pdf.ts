@@ -506,3 +506,213 @@ export async function buildCertificatePdf(args: {
   const bytes = await pdfDoc.save();
   return Buffer.from(bytes);
 }
+export async function buildArtifactCertificatePdf(args: {
+  id: string; // Artifact ID
+  issuedAtUtc: string;
+  registryNo?: string | null;
+  parentCertificateId: string;
+
+  originalFilename: string;
+  mimeType: string;
+  sizeBytes: number;
+  contentHash: string; // Artifact Hash
+  chainHash: string; // Linked Hash (Previous PDF hash)
+
+  fileBuffer?: Buffer; // For embedding thumbnail if image
+  caption?: string | null;
+
+  verificationUrl: string;
+}): Promise<Buffer> {
+  const pdfDoc = await PDFDocument.create();
+  pdfDoc.registerFontkit(fontkit);
+
+  const fontSerif = await pdfDoc.embedFont(fontRegularBytes);
+  const fontSerifBold = await pdfDoc.embedFont(fontBoldBytes);
+  const fontMono = await pdfDoc.embedFont("Courier");
+
+  const PAGE_W = 612;
+  const PAGE_H = 792;
+  const margin = 54;
+
+  const page = pdfDoc.addPage([PAGE_W, PAGE_H]);
+  const { width, height } = page.getSize();
+  let y = height - margin;
+
+  const drawText = (text: string, opts: { font: any; size: number; x?: number; y?: number; color?: any }) => {
+    const x = opts.x ?? margin;
+    const yy = opts.y ?? y;
+    page.drawText(text, { x, y: yy, size: opts.size, font: opts.font, color: opts.color ?? rgb(0, 0, 0) });
+  };
+  const drawLine = () => {
+    page.drawLine({
+      start: { x: margin, y },
+      end: { x: width - margin, y },
+      thickness: 1,
+      color: rgb(0, 0, 0)
+    });
+  };
+
+  // --- Header ---
+  drawText("PROOF OF THOUGHT™", { font: fontSerif, size: 16 });
+  y -= 22;
+  drawText("Independent Digital Evidence Custodian", { font: fontSerif, size: 10 });
+  y -= 18;
+  drawLine();
+  y -= 24;
+
+  drawText("Certificate of Artifact Sealing", { font: fontSerifBold, size: 14 });
+  y -= 24;
+
+  // --- Meta Block ---
+  const startY = y;
+  const col1X = margin;
+  const col2X = 320; // Start right column
+
+  // Left Column
+  drawText("ARTIFACT ID", { font: fontSerifBold, size: 8.5, color: rgb(0.4, 0.4, 0.4), x: col1X, y: y });
+  y -= 12;
+  drawText(args.id, { font: fontMono, size: 10, x: col1X, y: y });
+  y -= 22;
+
+  drawText("PARENT REGISTER", { font: fontSerifBold, size: 8.5, color: rgb(0.4, 0.4, 0.4), x: col1X, y: y });
+  y -= 12;
+  drawText(args.parentCertificateId, { font: fontMono, size: 10, x: col1X, y: y });
+  y -= 22;
+
+  // Right Column (Reset Y to top of block)
+  let yRight = startY;
+
+  drawText("ISSUED (UTC)", { font: fontSerifBold, size: 8.5, color: rgb(0.4, 0.4, 0.4), x: col2X, y: yRight });
+  yRight -= 12;
+  drawText(fmtUtc(args.issuedAtUtc), { font: fontMono, size: 10, x: col2X, y: yRight });
+  yRight -= 22;
+
+  drawText("REGISTRY NO.", { font: fontSerifBold, size: 8.5, color: rgb(0.4, 0.4, 0.4), x: col2X, y: yRight });
+  yRight -= 12;
+  drawText(args.registryNo ?? "—", { font: fontSerif, size: 10, x: col2X, y: yRight });
+  yRight -= 22;
+
+  // Sync Y to lowest point
+  y = Math.min(y, yRight);
+
+  y -= 12;
+  drawLine();
+  y -= 24;
+
+  // --- Artifact Details ---
+  drawText("Evidentiary Object Details (Content Manifest)", { font: fontSerifBold, size: 11 });
+  y -= 20;
+
+  // Add retrieval note
+  drawText("Original bytes retrievable via Vault using private access key.", { font: fontSerif, size: 9, color: rgb(0.3, 0.3, 0.3) });
+  y -= 16;
+
+  const detStartY = y;
+
+  // Left: Technicals
+  drawText("FILENAME", { font: fontSerifBold, size: 8.5, color: rgb(0.4, 0.4, 0.4), x: col1X, y: y });
+  y -= 12;
+  drawText(args.originalFilename, { font: fontSerif, size: 10, x: col1X, y: y });
+  y -= 20;
+
+  drawText("MIME TYPE", { font: fontSerifBold, size: 8.5, color: rgb(0.4, 0.4, 0.4), x: col1X, y: y });
+  y -= 12;
+  drawText(args.mimeType, { font: fontSerif, size: 10, x: col1X, y: y });
+  y -= 20;
+
+  drawText("SIZE", { font: fontSerifBold, size: 8.5, color: rgb(0.4, 0.4, 0.4), x: col1X, y: y });
+  y -= 12;
+  drawText(`${args.sizeBytes.toLocaleString()} bytes`, { font: fontSerif, size: 10, x: col1X, y: y });
+  y -= 20;
+
+  // Right: Caption & Hash
+  yRight = detStartY;
+
+  drawText("ARTIFACT HASH (SHA-256)", { font: fontSerifBold, size: 8.5, color: rgb(0.4, 0.4, 0.4), x: col2X, y: yRight });
+  yRight -= 12;
+  // Hash might be long, split if needed or small font
+  drawText(args.contentHash.substring(0, 32), { font: fontMono, size: 9, x: col2X, y: yRight });
+  yRight -= 10;
+  drawText(args.contentHash.substring(32), { font: fontMono, size: 9, x: col2X, y: yRight });
+  yRight -= 24;
+
+  if (args.caption) {
+    drawText("CAPTION", { font: fontSerifBold, size: 8.5, color: rgb(0.4, 0.4, 0.4), x: col2X, y: yRight });
+    yRight -= 12;
+    const capLines = wrapText(args.caption, 45); // narrow col
+    for (const l of capLines) {
+      drawText(l, { font: fontSerif, size: 10, x: col2X, y: yRight });
+      yRight -= 12;
+    }
+    yRight -= 12;
+  }
+
+  y = Math.min(y, yRight);
+  y -= 12;
+
+  // --- Thumbnail / Embedding ---
+  // If it's an image, try to embed it.
+  const isImage = args.mimeType.startsWith("image/") && (args.mimeType.includes("jpeg") || args.mimeType.includes("png"));
+
+  if (isImage && args.fileBuffer) {
+    try {
+      let img;
+      if (args.mimeType.includes("png")) img = await pdfDoc.embedPng(args.fileBuffer);
+      else img = await pdfDoc.embedJpg(args.fileBuffer);
+
+      // Constrain size
+      const maxW = PAGE_W - (margin * 2);
+      const maxH = 250;
+      const scale = Math.min(maxW / img.width, maxH / img.height);
+
+      const w = img.width * scale;
+      const h = img.height * scale;
+
+      page.drawImage(img, {
+        x: margin,
+        y: y - h,
+        width: w,
+        height: h
+      });
+
+      y -= (h + 20);
+    } catch (e) {
+      console.error("Failed to embed image thumbnail", e);
+      drawText("[Image Thumbnail Unavailable]", { font: fontMono, size: 9, color: rgb(0.5, 0.5, 0.5) });
+      y -= 20;
+    }
+  } else {
+    // Placeholder for binary/other
+    const boxH = 60;
+    page.drawRectangle({
+      x: margin, y: y - boxH, width: PAGE_W - (margin * 2), height: boxH,
+      borderColor: rgb(0.8, 0.8, 0.8), borderWidth: 1, color: rgb(0.97, 0.97, 0.97)
+    });
+    page.drawText("BINARY OBJECT ATTACHED", { x: margin + 20, y: y - 25, size: 12, font: fontSerifBold, color: rgb(0.3, 0.3, 0.3) });
+    page.drawText("Refer to artifact hash for verification.", { x: margin + 20, y: y - 45, size: 9, font: fontSerif, color: rgb(0.5, 0.5, 0.5) });
+    y -= (boxH + 20);
+  }
+
+  // --- Chain Link ---
+  drawLine();
+  y -= 20;
+  drawText("Cryptographic Chain Link", { font: fontSerifBold, size: 11 });
+  y -= 16;
+  drawText("This certificate is cryptographically linked to the following previous record:", { font: fontSerif, size: 9 });
+  y -= 14;
+  drawText("PREVIOUS HASH", { font: fontSerifBold, size: 8.5, color: rgb(0.4, 0.4, 0.4) });
+  y -= 12;
+  // Handle long chain hash wraps if needed, for now just mono
+  drawText(args.chainHash, { font: fontMono, size: 9 });
+  y -= 18;
+
+  // --- Verification ---
+  y -= 10;
+  drawText("VERIFICATION URL", { font: fontSerifBold, size: 8.5, color: rgb(0.4, 0.4, 0.4) });
+  y -= 12;
+  drawText(args.verificationUrl, { font: fontMono, size: 9 });
+  y -= 18;
+
+  const bytes = await pdfDoc.save();
+  return Buffer.from(bytes);
+}

@@ -2,6 +2,16 @@
 
 ... [Previous sections 1 and 2 omitted for brevity] ...
 
+#- [x] Document "Post-Launch Workflow" in `walkthrough.md` <!-- id: 36 -->
+- [x] Sync `walkthrough.md` to project root <!-- id: 37 -->
+
+## Task: Universal Media Sealing
+- [x] **Protocol Upgrade**: Hashing raw bytes for evidentiary rigor (not just image pixels).
+- [x] **Universal UI**: "Add Seal" page now accepts *any* file type (Audio, Video, CAD, Binary).
+- [x] **Asset Vault**: `GET /api/assets/[id]` endpoint created to retrieve original bytes securely.
+- [x] **Evidence Certificate**: New PDF generator (`buildArtifactCertificatePdf`) creates "Content Manifest" certificates with embedded thumbnails or retrieval instructions.
+- [x] **Vault Retrieval v1**: Integrated media players and "Download Original" buttons into the Vault UI.Render
+
 ## 3. Configure Roots Repository (Optional but Recommended)
 
 The app publishes daily Merkle roots to a separate GitHub repository for public transparency.

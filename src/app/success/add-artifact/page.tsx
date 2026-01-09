@@ -1,5 +1,6 @@
 import Button from "@/components/Button";
 import Divider from "@/components/Divider";
+import AddArtifactForm from "./AddArtifactForm";
 
 export const dynamic = "force-dynamic";
 
@@ -30,54 +31,7 @@ export default function AddArtifactPage({
 
       <Divider />
 
-      <form action="/api/artifacts" method="post" encType="multipart/form-data">
-        <input type="hidden" name="parentId" value={id} />
-        <input type="hidden" name="t" value={t} />
-
-        <label className="small">Image</label>
-        <input
-          style={{ display: "block", marginTop: 8, marginBottom: 12 }}
-          type="file"
-          name="file"
-          accept="image/*"
-          required
-        />
-
-        <label className="small">Thought Note (optional)</label>
-        <textarea
-          name="thoughtCaption"
-          placeholder="One sentence: why this sealed page exists…"
-          rows={2}
-          maxLength={240}
-          style={{
-            display: "block",
-            width: "100%",
-            marginTop: 8,
-            marginBottom: 16,
-            padding: "10px 12px",
-            border: "1px solid #000",
-            borderRadius: 0,
-            fontSize: 14,
-            resize: "vertical",
-          }}
-        />
-
-        <button
-          type="submit"
-          style={{
-            display: "inline-block",
-            background: "#000",
-            color: "#fff",
-            padding: "10px 14px",
-            borderRadius: 0,
-            border: "1px solid #000",
-            fontSize: 14,
-            cursor: "pointer",
-          }}
-        >
-          Seal Page
-        </button>
-      </form>
+      <AddArtifactForm parentId={id} t={t} />
 
       <p className="small" style={{ marginTop: 14 }}>
         <a href={`/success?id=${encodeURIComponent(id)}&t=${encodeURIComponent(t)}`}>← Back to certificate</a>
