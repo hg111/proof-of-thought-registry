@@ -4,16 +4,40 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { format, isValid, parseISO } from "date-fns";
 
+// Custom helper to format as UTC explicitly, avoiding browser local timezone shifts.
 function safeFormat(dateStr: string | null, fmt: string): string {
     if (!dateStr) return "Pending";
-    // Try parsing strictly if ISO
-    let d = new Date(dateStr);
-    if (!isValid(d)) {
-        // Fallback: try parsing assuming it might be '2026.01.09 • 02:43:02 UTC' format or similar trash
-        // Actually, better to just show "Invalid" or the raw string if it fails parsing
-        return dateStr;
+    const d = new Date(dateStr);
+    if (!isValid(d)) return dateStr;
+
+    // We assume input dateStr is an ISO UTC string (e.g. from DB)
+    // d.getUTCHours() gives the correct UTC hour.
+    // date-fns format(d) uses d.getHours() (Local).
+    // So we manually construct the format we need.
+
+    // Helper pad
+    const p = (n: number) => n.toString().padStart(2, '0');
+
+    const yyyy = d.getUTCFullYear();
+    const MM = p(d.getUTCMonth() + 1);
+    const dd = p(d.getUTCDate());
+    const HH = p(d.getUTCHours());
+    const mm = p(d.getUTCMinutes());
+    const ss = p(d.getUTCSeconds());
+
+    if (fmt === "yyyy-MM-dd HH:mm") {
+        // Requested: 2026.01.10 • 03:43:37 UTC
+        // We ignore the exact fmt string args and just return the standardized display format
+        // But we must respect if the caller wants ONLY date? 
+        // Let's stick to the requested "full format".
+        return `${yyyy}.${MM}.${dd} • ${HH}:${mm}:${ss} UTC`;
     }
-    return format(d, fmt) + " UTC";
+    if (fmt === "yyyy-MM-dd") {
+        // Just date? User didn't specify, but let's keep it consistent.
+        return `${yyyy}.${MM}.${dd}`;
+    }
+
+    return `${yyyy}.${MM}.${dd} • ${HH}:${mm}:${ss} UTC`;
 }
 
 
@@ -43,7 +67,7 @@ export default function PublicLedgerPage() {
     const [page, setPage] = useState(1);
     const [total, setTotal] = useState(0);
     const [limit] = useState(50);
-    const [sort, setSort] = useState<"genesis_desc" | "genesis_asc" | "lastseal_desc">("genesis_desc");
+    const [sort, setSort] = useState<"genesis_desc" | "genesis_asc" | "lastseal_desc">("lastseal_desc");
 
     useEffect(() => {
         fetchData();
@@ -155,7 +179,7 @@ export default function PublicLedgerPage() {
                                                 {chain.sealed_count}
                                             </td>
                                             <td className="ledgerTd">
-                                                {chain.last_seal_at_utc ? safeFormat(chain.last_seal_at_utc, "yyyy-MM-dd").replace(" UTC", "") : "—"}
+                                                {chain.last_seal_at_utc ? safeFormat(chain.last_seal_at_utc, "yyyy-MM-dd HH:mm").replace(" UTC", "") : "—"}
                                             </td>
                                             <td className="ledgerTd col-right">
                                                 <span className={`statusBadge ${chain.custody_status === 'Active' ? 'statusActive' : 'statusInactive'}`}>

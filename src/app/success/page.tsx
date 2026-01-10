@@ -15,6 +15,8 @@ const CopyPrivateControlLink = nextDynamic(
 );
 
 const SealPoller = nextDynamic(() => import("@/components/SealPoller"), { ssr: false });
+const ChainTimeline = nextDynamic(() => import("@/components/ChainTimeline"), { ssr: true });
+const SuccessPageWrapper = nextDynamic(() => import("@/components/SuccessPageWrapper"), { ssr: false });
 
 const fmtUtcSafe = (v: any) => {
   const s = String(v ?? "").trim();
@@ -59,7 +61,7 @@ export default async function SuccessPage({ searchParams }: { searchParams: { id
 
 
   return (
-    <>
+    <SuccessPageWrapper>
       <div className="kicker">Issued</div>
       <h1 className="h1">Certificate available</h1>
       <p className="subhead">
@@ -166,57 +168,29 @@ export default async function SuccessPage({ searchParams }: { searchParams: { id
       <Divider />
 
       <div className="kicker">Ledger</div>
-      <h2 className="h2">Certificate timeline</h2>
-      <p className="subhead">
+      <h2 className="h2" style={{ marginBottom: 10 }}>Certificate timeline</h2>
+      <p className="subhead" style={{ marginBottom: 20 }}>
         Page 1 is your Genesis Proof. Add sealed pages as your idea evolves.
       </p>
 
-
-      <Divider />
-      <MonoBlock label="Page 1 — Genesis Proof" value={fmtUtcSafe(sub.issued_at)} />
-      <MonoBlock label="Genesis hash (SHA-256)" value={sub.content_hash} />
-
-      {artifacts.length > 0 && (
-        <>
-          <Divider />
-          {artifacts.map((a, idx) => (
-            <div key={a.id} style={{ marginBottom: 14 }}>
-              <MonoBlock label={`Page ${idx + 2} — Sealed Attachment`} value={`${a.original_filename}`} />
-              {a.thought_caption ? (
-                <p className="small" style={{ marginTop: 6, fontStyle: "italic" }}>
-                  Thought Note: {a.thought_caption}
-                </p>
-              ) : null}
-              <MonoBlock label="Issued (UTC)" value={fmtUtcSafe(a.issued_at)} />
-              <MonoBlock label="Canonical hash (SHA-256)" value={a.canonical_hash} />
-              <MonoBlock label="Chain hash" value={a.chain_hash} />
-              <div style={{ marginTop: 8, display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                <Button href={`/vault?id=${encodeURIComponent(a.id)}&t=${encodeURIComponent(t)}`}>
-                  Preview in Vault
-                </Button>
-                <Button href={`/api/artifacts/${encodeURIComponent(a.id)}/download?t=${encodeURIComponent(t)}`}>
-                  Download sealed receipt (PDF)
-                </Button>
-              </div>
-              <Divider />
-            </div>
-          ))}
-        </>
-      )}
-
-      <div style={{ marginTop: 20 }}>
-        <Button
-          href={`/success/add-artifact?id=${encodeURIComponent(sub.id)}&t=${encodeURIComponent(t)}`}
-          tooltip={
-            <>
-              <strong>Add a new sealed page to this Thought chain (image or PDF).</strong><br />
-              It will be timestamped, hashed, and permanently appended <br />as the next page in your chain.
-            </>
-          }
-        >
-          ➕ Add sealed page
-        </Button>
-      </div>
-    </>
+      <ChainTimeline
+        genesis={{
+          id: sub.id,
+          issuedAt: sub.issued_at || sub.created_at,
+          hash: sub.content_hash,
+          label: sub.title || "Untitled Thought"
+        }}
+        artifacts={artifacts.map(a => ({
+          id: a.id,
+          issuedAt: a.issued_at,
+          filename: a.original_filename,
+          note: a.thought_caption,
+          hash: a.canonical_hash,
+          chainHash: a.chain_hash
+        }))}
+        accessKey={t}
+        initialUnitLabel={sub.unit_label ?? "PAGE"}
+      />
+    </SuccessPageWrapper>
   );
 }

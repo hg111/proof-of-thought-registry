@@ -24,6 +24,7 @@ type SubmissionRow = {
   record_class: RecordClass;
   seal_object_key: string | null;
   is_public: number; // 0 or 1
+  unit_label: string;
 };
 
 
@@ -192,6 +193,9 @@ function ensure() {
   }
   if (!colNames.has("is_public")) {
     db.exec(`ALTER TABLE submissions ADD COLUMN is_public INTEGER DEFAULT 0; `);
+  }
+  if (!colNames.has("unit_label")) {
+    db.exec(`ALTER TABLE submissions ADD COLUMN unit_label TEXT DEFAULT 'PAGE'; `);
   }
 
   return db;
@@ -471,6 +475,10 @@ export function dbSetChainPdfKey(submissionId: string, chainPdfKey: string) {
       `).run(chainPdfKey, submissionId);
 }
 
+export function dbSetUnitLabel(id: string, label: string) {
+  getDb().prepare(`UPDATE submissions SET unit_label = ? WHERE id = ? `).run(label, id);
+}
+
 export type PublicChainRow = {
   chain_id: string;
   genesis_certificate_id: string;
@@ -571,6 +579,7 @@ export function dbUpdatePublicChainIndex(submissionId: string) {
         @last_seal_at_utc, 'Active', @is_public, @now, @now
       )
     ON CONFLICT(chain_id) DO UPDATE SET
+      genesis_issued_at_utc = excluded.genesis_issued_at_utc,
       sealed_count = excluded.sealed_count,
     last_seal_at_utc = excluded.last_seal_at_utc,
     is_public = excluded.is_public,
