@@ -4,13 +4,15 @@ import Link from "next/link";
 import { useState, useRef } from "react";
 
 type Props =
-  | { href: string; children: React.ReactNode; disabled?: boolean; tooltip?: React.ReactNode }
+  | { href: string; children: React.ReactNode; disabled?: boolean; tooltip?: React.ReactNode; variant?: "primary" | "secondary"; size?: "small" | "normal" }
   | {
     children: React.ReactNode;
     disabled?: boolean;
     onClick?: () => void;
     type?: "button" | "submit";
     tooltip?: React.ReactNode;
+    variant?: "primary" | "secondary";
+    size?: "small" | "normal";
   };
 
 export default function Button(props: Props) {
@@ -24,11 +26,11 @@ export default function Button(props: Props) {
   const className = "inline-block" as const;
 
   const style: React.CSSProperties = {
-    border: hovered ? "1px solid #0000FF" : "1px solid #bbb",
-    padding: "0 12px",
-    height: "36px",
+    border: (props as any).variant === "secondary" ? (hovered ? "1px solid #999" : "1px solid #ccc") : (hovered ? "1px solid #0000FF" : "1px solid #bbb"),
+    padding: (props as any).size === "small" ? "0 8px" : "0 12px",
+    height: (props as any).size === "small" ? "28px" : "36px",
     borderRadius: 4,
-    background: active ? "#f2f2f2" : "#fff",
+    background: (props as any).variant === "secondary" ? (hovered ? "#eeeeee" : "#f9f9f9") : (active ? "#f2f2f2" : "#fff"),
     color: "#000",
     textDecoration: "none",
     fontSize: 13,
