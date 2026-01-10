@@ -279,7 +279,7 @@ def main():
     # 4. Registry No below "Proof of Thought"
     if registry_no:
         print(f"Stamping Registry: '{registry_no}'")
-        draw_horizontal_text_centered(flat_layer, registry_no, 1024, 1318, font_reg, MICRO_COLOR)
+        draw_horizontal_text_centered(flat_layer, registry_no, 1024, 1330, font_reg, MICRO_COLOR)
 
     # 5. Hash (Inner Top Arc)
     if doc_hash:
