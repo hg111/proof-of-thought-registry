@@ -240,7 +240,9 @@ export async function buildCertificatePdf(args: {
 
     const xSeal = width - margin - drawW;
     // top edge of seal aligns to bottom letters (baseline) of custodian line
-    const ySeal = yCustodianBaseline - drawH;
+    // User requested "top edge of seal about the height of the row + height of letters"
+    // Baseline + 12px aligns Top of Seal with Top of Text (approx).
+    const ySeal = yCustodianBaseline - drawH + 24;
 
     page1.drawImage(sharedSealImg, { x: xSeal, y: ySeal, width: drawW, height: drawH });
   }
