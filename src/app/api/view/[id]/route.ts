@@ -18,13 +18,9 @@ async function ensureGenesisPdf(sub: any) {
     const pdfKey = sub.pdf_object_key || sub.receipt_pdf_key;
     if (pdfKey) {
         const full = path.join(config.dataDir, pdfKey);
-        // FORCE REGEN for Engraved to ensure latest Seal logic (White BG)
-        const needsSeal = (sub.record_class === "ENGRAVED");
-        if (fs.existsSync(full) && !needsSeal) {
+        if (fs.existsSync(full)) {
             console.log(`[LazyGen] Using cached PDF for ${sub.id}`);
             return pdfKey;
-        } else if (needsSeal) {
-            console.log(`[LazyGen] FORCE REGEN triggered for ${sub.id} (Update/Fix)`);
         }
     }
 
@@ -54,7 +50,8 @@ async function ensureGenesisPdf(sub: any) {
                 contentHash: fullHash,
                 verificationUrl: verificationUrl,
                 holderName: sub.holder_name || "",
-                bg: "transparent"
+                bg: "transparent",
+                resize: 600
             });
             console.log(`[LazyGen] Seal (Transparent) Generated. Size: ${sealBytesForPdf.length} bytes`);
 
