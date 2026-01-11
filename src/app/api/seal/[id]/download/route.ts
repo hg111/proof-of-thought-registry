@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
-import { dbGetSubmission } from "@/lib/db";
+import { dbGetSubmission, dbSetSealObjectKey } from "@/lib/db";
 import { config } from "@/lib/config";
+import { generateSealPng } from "@/lib/seal";
 
 export const runtime = "nodejs";
 
@@ -23,11 +24,48 @@ export async function GET(req: Request, ctx: { params: { id: string } }) {
     }
 
     const key = (sub as any).seal_object_key as string | null;
-    if (!key) return NextResponse.json({ error: "No seal for this record." }, { status: 404 });
+    let fullPath = "";
 
-    const fullPath = path.isAbsolute(key) ? key : path.join(config.dataDir, key);
+    // If key exists, check if file exists
+    if (key) {
+      fullPath = path.isAbsolute(key) ? key : path.join(config.dataDir, key);
+    }
+
+    // Lazy Gen Logic:
+    // If NO key, OR (key exists but file missing) -> Generate
+    if (!key || (key && !fs.existsSync(fullPath))) {
+      console.log(`[SealDownload] Lazy generating seal for ${sub.id}`);
+
+      // Ensure we have a valid ISO string, or fallback to now
+      const issuedAt = (sub as any).issued_at || new Date().toISOString();
+
+      const pngBuffer = await generateSealPng({
+        certId: sub.id,
+        issuedAtUtcIso: issuedAt,
+        variant: "ENGRAVED", // Force Engraved for this download route
+        registryNo: (sub as any).registry_no ? `R-${String((sub as any).registry_no).padStart(16, "0")}` : "R-0000000000000000",
+        contentHash: (sub as any).content_hash,
+        verificationUrl: `${config.appBaseUrl}/verify/${sub.id}`,
+        holderName: (sub as any).holder_name || "",
+        bg: "white" // Standalone download should be white bg? Or check user pref? Standard is white for "Download Seal".
+      });
+
+      // Define path
+      const filename = `seal_${sub.id}_ENGRAVED.png`;
+      const relativePath = path.join("seals", filename);
+      fullPath = path.join(config.dataDir, relativePath);
+
+      // Ensure dir
+      fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+      fs.writeFileSync(fullPath, pngBuffer);
+
+      // Update DB
+      dbSetSealObjectKey(sub.id, relativePath);
+    }
+
+    // Final check
     if (!fs.existsSync(fullPath)) {
-      return NextResponse.json({ error: "Seal missing on disk." }, { status: 404 });
+      return NextResponse.json({ error: "Seal generation failed." }, { status: 500 });
     }
 
     const png = fs.readFileSync(fullPath);
@@ -39,6 +77,7 @@ export async function GET(req: Request, ctx: { params: { id: string } }) {
       },
     });
   } catch (e: any) {
+    console.error("[SealDownload] Error:", e);
     return NextResponse.json({ error: e?.message || "Error." }, { status: 500 });
   }
 }
