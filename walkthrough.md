@@ -12,6 +12,11 @@
 - [x] **Evidence Certificate**: New PDF generator (`buildArtifactCertificatePdf`) creates "Content Manifest" certificates with embedded thumbnails or retrieval instructions.
 - [x] **Vault Retrieval v1**: Integrated media players and "Download Original" buttons into the Vault UI.Render
 
+## Task: UI/UX Polish (Timeline & Animation)
+- [x] **Visual Chain Explorer**: Vertical "metro-style" timeline in `SuccessPage` replaces the plain list. Shows Genesis -> Artifacts sequence clearly.
+- [x] **Sealing Animation**: "Hash -> Lock -> Stamp" animation plays during seal creation to provide ceremonial weight.
+- [x] **Institutional Forms**: Redesigned `/start` with cleaner typography, section headers, and "Institutional Minimalist" styling.
+
 ## 3. Configure Roots Repository (Optional but Recommended)
 
 The app publishes daily Merkle roots to a separate GitHub repository for public transparency.

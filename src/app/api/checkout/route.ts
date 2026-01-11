@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     const session = await getStripe().checkout.sessions.create({
       mode: "payment",
       line_items: [{ price: priceForRecordClass(sub.record_class), quantity: 1 }],
-      success_url: `${config.appBaseUrl}/success?id=${encodeURIComponent(sub.id)}&t=${encodeURIComponent(sub.access_token)}`,
+      success_url: `${config.appBaseUrl}/success?id=${encodeURIComponent(sub.id)}&t=${encodeURIComponent(sub.access_token)}&animate=true`,
       cancel_url: `${config.appBaseUrl}/start`,
       metadata: { submission_id: sub.id, recordClass: sub.record_class },
       payment_intent_data: { metadata: { submission_id: sub.id, recordClass: sub.record_class } },

@@ -18,8 +18,19 @@ export async function POST(req: NextRequest) {
   if (!parentId || !file) return NextResponse.json({ error: "missing" }, { status: 400 });
 
   const parent = dbGetSubmission(parentId);
-  if (!parent || parent.status !== "issued")
-    return NextResponse.json({ error: "parent not issued" }, { status: 400 });
+  const isDev = process.env.NODE_ENV === "development";
+  if (!parent || (parent.status !== "issued" && !isDev)) {
+    console.error(`Artifact Upload Failed: Parent ${parentId}, status=${parent?.status}`);
+    return NextResponse.json({
+      error: "parent not issued",
+      debug: {
+        id: parentId,
+        status: parent?.status || "not_found",
+        exists: !!parent,
+        isDev
+      }
+    }, { status: 400 });
+  }
 
   const buf = Buffer.from(await file.arrayBuffer());
 
@@ -75,11 +86,20 @@ export async function POST(req: NextRequest) {
     size_bytes: file.size,
   });
 
-  const chainKey = await writeChainPdf(parentId);
-  dbSetChainPdfKey(parentId, chainKey);
-
-  // ✅ update the accumulated chain PDF (Genesis + all artifacts in order)
-  await writeChainPdf(parentId);
+  // 4. Update Chain PDF (Optional/Best Effort in Dev)
+  if (parent.status === "issued") {
+    try {
+      const chainKey = await writeChainPdf(parentId);
+      dbSetChainPdfKey(parentId, chainKey);
+    } catch (e: any) {
+      // In dev mode, missing PDF is expected if parent is draft
+      if (isDev) {
+        console.warn("[Dev Warning] Failed to update chain PDF (expected if draft):", e.message);
+      } else {
+        throw e; // Rethrow in prod
+      }
+    }
+  }
 
   const t = String(form.get("t") || "");
   return NextResponse.redirect(
