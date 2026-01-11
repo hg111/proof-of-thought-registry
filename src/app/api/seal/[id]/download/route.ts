@@ -19,7 +19,7 @@ export async function GET(req: Request, ctx: { params: { id: string } }) {
     if (!sub) return NextResponse.json({ error: "Not found." }, { status: 404 });
     if (sub.access_token !== token) return NextResponse.json({ error: "Access denied." }, { status: 403 });
 
-    if (sub.status !== "issued") {
+    if (sub.status !== "issued" && sub.status !== "paid") {
       return NextResponse.json({ error: "Certificate not issued yet." }, { status: 409 });
     }
 
