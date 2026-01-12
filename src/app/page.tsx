@@ -12,10 +12,14 @@ export default function Home() {
       </p>
 
       {/* Authority Seal */}
-      <div className="heroSeal">
-        <img
-          src="/assets/proof_of_thought_timestamp_seal.png"
-          alt="Proof of Thought Timestamp Seal"
+      <div style={{ marginBottom: 30, borderRadius: 6, overflow: "hidden", boxShadow: "0 4px 20px rgba(0,0,0,0.08)", maxWidth: 640, margin: "25px auto 30px auto" }}>
+        <video
+          src="/assets/Cryptographic_Custody_Protocol_Animation_Prompt_5.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          style={{ width: "100%", display: "block", filter: "brightness(1.1)" }}
         />
       </div>
 
@@ -66,6 +70,19 @@ export default function Home() {
       </div>
 
       <Divider />
+
+
+
+
+
+
+      {/* Authority Seal */}
+      <div className="heroSeal" style={{ margin: "30px 0" }}>
+        <img
+          src="/assets/proof_of_thought_timestamp_seal.png"
+          alt="Proof of Thought Timestamp Seal"
+        />
+      </div>
 
       <div>
         <div className="kicker">Pricing</div>
