@@ -18,9 +18,10 @@ export async function POST(req: Request) {
   const phrase = String(form.get("phrase") ?? "").trim();
   const nextRaw = String(form.get("next") ?? "/").trim() || "/";
 
-  const expected = String(process.env.POT_PRIVATE_PHRASE ?? "").trim();
+  const expectedRaw = String(process.env.POT_PRIVATE_PHRASE ?? "").trim();
+  const validPhrases = expectedRaw.split(",").map(p => p.trim()).filter(Boolean);
 
-  if (!expected) {
+  if (validPhrases.length === 0) {
     return NextResponse.json(
       { error: "Server missing POT_PRIVATE_PHRASE." },
       { status: 500 }
@@ -28,7 +29,7 @@ export async function POST(req: Request) {
   }
 
   // Wrong phrase → back to gate
-  if (phrase !== expected) {
+  if (!validPhrases.includes(phrase)) {
     const url = new URL(req.url);
     url.pathname = "/gate";
     url.searchParams.set("e", "1");
