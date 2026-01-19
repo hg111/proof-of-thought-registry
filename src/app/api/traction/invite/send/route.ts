@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { dbGetInvite } from '@/lib/db';
 import nodemailer from 'nodemailer';
 
+import { config } from '@/lib/config';
+
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
@@ -17,7 +19,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Invalid token" }, { status: 404 });
         }
 
-        const inviteLink = `${new URL(req.url).origin}/ack/recipient?t=${token}`;
+        const inviteLink = `${config.appBaseUrl}/ack/recipient?t=${token}`;
 
         console.log("Attempting to send email to:", recipient_email);
         try {
