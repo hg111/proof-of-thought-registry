@@ -191,7 +191,7 @@
     color: #3b82f6;
     text-shadow: 0 0 30px rgba(59, 130, 246, 0.4);
     line-height: 1;
-    margin: 4px 0 16px;
+    margin: 4px 0 10px;
     /* Reduced margins */
 }
 
@@ -201,7 +201,7 @@
     text-transform: uppercase;
     letter-spacing: 1.5px;
     font-weight: 700;
-    margin-top: 16px;
+    margin-top: 12px;
 }
 
 /* Fraction Style */
@@ -228,9 +228,9 @@
 
 /* TIERED REQUEST OPTIONS - CONDENSED */
 .radiant-tier-list {
-    margin-top: 12px;
+    margin-top: 8px;
     width: 100%;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
 }
 
 .radiant-tier-item {

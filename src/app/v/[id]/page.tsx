@@ -178,7 +178,7 @@ export default function RadiantVerifierPage() {
                     <div className="radiant-traction-hero">
 
                         {/* Metrics Row */}
-                        <div style={{ display: 'flex', gap: '32px', marginBottom: '20px', alignItems: 'flex-end' }}>
+                        <div style={{ display: 'flex', gap: '32px', marginBottom: '10px', alignItems: 'flex-end' }}>
                             <div style={{ textAlign: 'center' }}>
                                 <div className="radiant-fraction">
                                     <span className="num">{signals.length}</span>
@@ -225,7 +225,7 @@ export default function RadiantVerifierPage() {
                         </div>
 
                         {/* Request Form */}
-                        <div style={{ marginTop: '20px' }}>
+                        <div style={{ marginTop: '10px' }}>
                             {!requestSent ? (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                     <input
@@ -236,9 +236,9 @@ export default function RadiantVerifierPage() {
                                             background: 'rgba(255,255,255,0.05)',
                                             border: '1px solid rgba(255,255,255,0.1)',
                                             color: '#fff',
-                                            padding: '12px',
+                                            padding: '8px 12px',
                                             borderRadius: '6px',
-                                            fontSize: '14px'
+                                            fontSize: '13px'
                                         }}
                                         value={requesterEmail}
                                         onChange={e => setRequesterEmail(e.target.value)}
