@@ -285,7 +285,7 @@
 
 .traction-grid {
     display: grid;
-    grid-template-columns: 1fr 0.52fr;
+    grid-template-columns: 1.25fr 0.75fr;
     gap: 14px;
     margin-top: 14px;
 }
