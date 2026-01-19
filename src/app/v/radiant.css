@@ -191,7 +191,7 @@
     color: #3b82f6;
     text-shadow: 0 0 30px rgba(59, 130, 246, 0.4);
     line-height: 1;
-    margin: 4px 0 10px;
+    margin: 4px 0 8px;
     /* Reduced margins */
 }
 
@@ -201,7 +201,7 @@
     text-transform: uppercase;
     letter-spacing: 1.5px;
     font-weight: 700;
-    margin-top: 12px;
+    margin-top: 8px;
 }
 
 /* Fraction Style */
@@ -228,9 +228,9 @@
 
 /* TIERED REQUEST OPTIONS - CONDENSED */
 .radiant-tier-list {
-    margin-top: 8px;
+    margin-top: 4px;
     width: 100%;
-    margin-bottom: 10px;
+    margin-bottom: 6px;
 }
 
 .radiant-tier-item {
@@ -239,9 +239,9 @@
     gap: 8px;
     font-size: 11px;
     color: #94a3b8;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
     /* Condensed spacing */
-    padding: 4px 8px;
+    padding: 2px 8px;
     border-radius: 6px;
     transition: background 0.2s;
     cursor: pointer;
@@ -283,7 +283,7 @@
     color: #3b82f6;
     border: 1px solid #3b82f6;
     /* Blue edge */
-    padding: 8px 20px;
+    padding: 6px 20px;
     /* Thinner */
     border-radius: 99px;
     font-weight: 700;
