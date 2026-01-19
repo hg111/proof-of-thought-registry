@@ -1,0 +1,400 @@
+<!-- Ack-Invite.html (PATCHED) -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>PoT — Acknowledgment Invite (Mock)</title>
+  <style>
+    :root{
+      --bg:#0b0f19; --card:#0f1629; --muted:#9aa7bd; --text:#e8eefc;
+      --line:rgba(255,255,255,.08); --accent:#7c5cff; --good:#2dd4bf;
+      --shadow:0 18px 50px rgba(0,0,0,.35); --radius:16px;
+      --mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+      --sans:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+    }
+    *{box-sizing:border-box} html,body{height:100%}
+    body{
+      margin:0; font-family:var(--sans); color:var(--text);
+      background:
+        radial-gradient(1200px 800px at 12% 10%, rgba(124,92,255,.18), transparent 55%),
+        radial-gradient(900px 600px at 88% 30%, rgba(45,212,191,.10), transparent 50%),
+        var(--bg);
+    }
+    .wrap{max-width:980px;margin:0 auto;padding:26px 18px 56px}
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+    .brand{display:flex;align-items:center;gap:10px}
+    .logo{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg, rgba(124,92,255,.9), rgba(45,212,191,.75));box-shadow:0 10px 30px rgba(124,92,255,.18)}
+    .brand h1{font-size:14px;letter-spacing:.4px;margin:0;color:rgba(232,238,252,.92)}
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.03);color:var(--muted);font-size:12px}
+    .pill .dot{width:8px;height:8px;border-radius:999px;background:var(--good)}
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    header{padding:16px 16px 0}
+    .kicker{font-size:12px;color:var(--muted);letter-spacing:.35px;text-transform:uppercase}
+    h2{margin:6px 0 0;font-size:18px;line-height:1.25}
+    .sub{margin:8px 0 0;color:var(--muted);font-size:13px;line-height:1.45}
+    .content{padding:16px}
+    .section{padding:14px 0;border-top:1px solid var(--line)}
+    .section:first-child{border-top:0;padding-top:0}
+    label{display:block;font-size:12px;color:rgba(232,238,252,.88);margin-bottom:6px}
+    input[type="text"], input[type="email"], textarea, select{
+      width:100%; padding:11px 12px; border-radius:12px;
+      border:1px solid var(--line); background:rgba(10,14,26,.65);
+      color:var(--text); outline:none; font-size:13px;
+    }
+    textarea{min-height:92px;resize:vertical}
+    input::placeholder, textarea::placeholder{color:rgba(154,167,189,.75)}
+    .hint{margin-top:6px;font-size:12px;color:var(--muted);line-height:1.35}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width:640px){.row{grid-template-columns:1fr}}
+    .chips{display:flex;flex-wrap:wrap;gap:8px}
+    .chip{
+      display:inline-flex;align-items:center;gap:8px;padding:8px 10px;
+      border:1px solid rgba(124,92,255,.35); background:rgba(124,92,255,.14);
+      border-radius:999px;font-size:12px;color:rgba(232,238,252,.92);user-select:none;
+    }
+    .chip input{accent-color:var(--accent)}
+    .toggle{
+      display:inline-flex;align-items:center;gap:10px;border:1px solid var(--line);
+      border-radius:999px;padding:8px 10px;background:rgba(255,255,255,.03);
+      font-size:12px;color:rgba(232,238,252,.9);user-select:none;
+    }
+    .toggle input{accent-color:var(--accent)}
+    .callout{
+      padding:12px;border-radius:14px;border:1px solid rgba(124,92,255,.28);
+      background:rgba(124,92,255,.10);color:rgba(232,238,252,.92);
+      font-size:12px;line-height:1.45;
+    }
+    .btnRow{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    button{
+      padding:11px 14px;border-radius:12px;border:1px solid var(--line);
+      background:rgba(255,255,255,.04);color:var(--text);font-weight:600;font-size:13px;cursor:pointer;
+    }
+    button.primary{
+      border-color:rgba(124,92,255,.55);
+      background:linear-gradient(135deg, rgba(124,92,255,.95), rgba(124,92,255,.65));
+      box-shadow:0 14px 40px rgba(124,92,255,.18);
+    }
+    button.ghost{background:transparent}
+    button:disabled{opacity:.55;cursor:not-allowed}
+    .mono{
+      font-family:var(--mono);font-size:12px;color:rgba(232,238,252,.9);
+      background:rgba(0,0,0,.25);border:1px solid var(--line);
+      border-radius:12px;padding:10px;overflow:auto;
+    }
+    .divider{height:1px;background:var(--line);margin:12px 0}
+    .miniMeta{display:flex;gap:10px;flex-wrap:wrap;align-items:center;color:var(--muted);font-size:12px;margin-top:8px}
+    .badge{display:inline-flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.03)}
+    .badge b{color:rgba(232,238,252,.95);font-weight:600}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h1>Proof-of-Thought</h1>
+          <div class="pill"><span class="dot"></span> Ack Invite (mock)</div>
+        </div>
+      </div>
+      <div class="pill">
+        <span style="font-family:var(--mono)">pot_record_id</span>
+        <span style="opacity:.9">R-0000…1</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <header>
+        <div class="kicker">Create invite</div>
+
+        <!-- PATCH: headline -->
+        <h2>Acknowledge you didn’t see the idea, but were made aware of it (optional valuation)</h2>
+
+        <!-- PATCH: subtext -->
+        <p class="sub">
+          Recipient reviews a short handle (title + 1–2 sentences). The sealed underlying content is not shared.
+        </p>
+      </header>
+
+      <div class="content">
+        <div class="section">
+          <div class="row">
+            <div>
+              <label>Handle title</label>
+              <input id="handleTitle" type="text" maxlength="80"
+                     placeholder="e.g., Proof-of-Thought: cryptographic custody for idea chains" />
+              <div class="hint"><span id="titleCount">0</span>/80</div>
+            </div>
+            <div>
+              <label>Category (optional)</label>
+              <select id="category">
+                <option value="">Select…</option>
+                <option>Invention / IP</option>
+                <option>Research finding</option>
+                <option>Creative concept</option>
+                <option>Product idea</option>
+                <option>Other</option>
+              </select>
+              <div class="hint">Helps the recipient frame a valuation without full disclosure.</div>
+            </div>
+          </div>
+
+          <div style="margin-top:12px;">
+            <label>Handle summary (1–2 sentences)</label>
+            <textarea id="handleSummary" maxlength="240"
+                      placeholder="High-level description without revealing secrets. Keep it tight."></textarea>
+            <div class="hint"><span id="sumCount">0</span>/240</div>
+          </div>
+        </div>
+
+        <div class="section">
+          <label>Ask for</label>
+          <div class="chips">
+            <!-- PATCH: label copy -->
+            <label class="chip"><input id="askAck" type="checkbox" checked /> “Made aware” acknowledgment</label>
+            <label class="chip"><input id="askVal" type="checkbox" checked /> Valuation signal</label>
+            <label class="chip"><input id="askComment" type="checkbox" /> Short comment</label>
+          </div>
+
+          <!-- PATCH: hint copy -->
+          <div class="hint">
+            “Made aware” = “I reviewed the handle (title + summary). I did not receive the sealed underlying content.”
+            Valuation = credibility signal.
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="row">
+            <div>
+              <label>Recipient name (optional)</label>
+              <input id="recName" type="text" placeholder="e.g., Dr. Jane Doe" />
+            </div>
+            <div>
+              <label>Recipient email (manual send)</label>
+              <input id="recEmail" type="email" placeholder="name@domain.com" />
+            </div>
+          </div>
+
+          <div style="margin-top:12px;">
+            <label>Message (optional)</label>
+            <textarea id="message" maxlength="360"
+                      placeholder="2–4 lines: why them, what you want, and what’s in it for them."></textarea>
+            <div class="hint">Tip: offer reciprocity (credit, intro, donation, feedback loop).</div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="chips">
+            <label class="toggle"><input id="expire" type="checkbox" checked /> Expire link in 7 days</label>
+            <label class="toggle"><input id="singleUse" type="checkbox" checked /> Single response max</label>
+            <label class="toggle"><input id="anon" type="checkbox" /> Allow private response</label>
+          </div>
+
+          <!-- PATCH: callout copy -->
+          <div class="callout" style="margin-top:12px;">
+            <b>Plain English:</b> This is not an endorsement and not a “witness” role.
+            It’s a recorded response confirming the recipient was made aware of the handle linked to
+            sealed record <span style="font-family:var(--mono)">R-0000…1</span>.
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="btnRow">
+            <button class="primary" id="genLink">Generate invite link</button>
+            <button class="ghost" id="copyMsg" disabled>Copy message</button>
+            <button id="reset">Reset</button>
+          </div>
+
+          <div id="out" style="display:none; margin-top:12px;">
+            <div class="divider"></div>
+            <label>Invite link (mock)</label>
+            <div class="mono" id="inviteLink"></div>
+
+            <div style="margin-top:10px;">
+              <label>Copy/paste message (mock)</label>
+              <div class="mono" id="inviteText"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section" style="padding-bottom:0;">
+          <div class="kicker">Live preview</div>
+          <div class="miniMeta">
+            <span class="badge"><b>Linked</b> R-0000…1</span>
+            <span class="badge"><b>Status</b> draft</span>
+          </div>
+          <div class="divider"></div>
+          <div class="callout" style="border-color:rgba(255,255,255,.10);background:rgba(255,255,255,.03);">
+            <div class="kicker" style="margin-bottom:6px;">Handle shown to recipient</div>
+            <div style="font-size:14px;font-weight:700;margin-bottom:6px" id="pTitle">—</div>
+            <div style="color:var(--muted);font-size:13px;line-height:1.45" id="pSummary">Add a title + 1–2 sentence summary.</div>
+            <div class="divider"></div>
+            <div class="chips" id="pAsks"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const el = (id) => document.getElementById(id);
+
+  const handleTitle = el("handleTitle");
+  const handleSummary = el("handleSummary");
+  const titleCount = el("titleCount");
+  const sumCount = el("sumCount");
+
+  const askAck = el("askAck");
+  const askVal = el("askVal");
+  const askComment = el("askComment");
+
+  const recName = el("recName");
+  const recEmail = el("recEmail");
+  const message = el("message");
+  const category = el("category");
+
+  const expire = el("expire");
+  const singleUse = el("singleUse");
+  const anon = el("anon");
+
+  const genLink = el("genLink");
+  const out = el("out");
+  const inviteLink = el("inviteLink");
+  const inviteText = el("inviteText");
+  const copyMsg = el("copyMsg");
+  const reset = el("reset");
+
+  const pTitle = el("pTitle");
+  const pSummary = el("pSummary");
+  const pAsks = el("pAsks");
+
+  function safe(v){ return (v || "").trim(); }
+
+  function chip(text){
+    const span = document.createElement("span");
+    span.className = "chip";
+    span.style.cursor = "default";
+    span.style.opacity = ".85";
+    span.textContent = text;
+    return span;
+  }
+
+  function updateCounts(){
+    titleCount.textContent = String(handleTitle.value.length);
+    sumCount.textContent = String(handleSummary.value.length);
+  }
+
+  function updatePreview(){
+    const t = safe(handleTitle.value);
+    const s = safe(handleSummary.value);
+
+    pTitle.textContent = t || "—";
+    pSummary.textContent = s || "Add a title + 1–2 sentence summary.";
+
+    pAsks.innerHTML = "";
+    if (askAck.checked) pAsks.appendChild(chip("Made-aware acknowledgment"));
+    if (askVal.checked) pAsks.appendChild(chip("Valuation signal"));
+    if (askComment.checked) pAsks.appendChild(chip("Short comment"));
+    if (!askAck.checked && !askVal.checked && !askComment.checked){
+      pAsks.appendChild(chip("No asks selected"));
+    }
+  }
+
+  function randomToken(len=18){
+    const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+    let s = "";
+    for (let i=0;i<len;i++) s += chars[Math.floor(Math.random()*chars.length)];
+    return s;
+  }
+
+  function buildInviteLink(){
+    const token = randomToken();
+    const flags = [
+      expire.checked ? "exp=7d" : "exp=none",
+      singleUse.checked ? "use=1" : "use=multi",
+      anon.checked ? "anon=1" : "anon=0"
+    ].join("&");
+    return `https://proof-of-thought.example/ack/${token}?${flags}`;
+  }
+
+  function buildInviteText(link){
+    const t = safe(handleTitle.value) || "(Untitled)";
+    const s = safe(handleSummary.value) || "(No summary provided)";
+    const cat = safe(category.value);
+
+    const who = safe(recName.value) ? `Hi ${safe(recName.value)},` : "Hi —";
+    const asks = [];
+    if (askAck.checked) asks.push("a quick acknowledgment that you were made aware of this handle (high-level only)");
+    if (askVal.checked) asks.push("a quick valuation signal (range is fine)");
+    if (askComment.checked) asks.push("a short comment (optional)");
+    const askLine = asks.length ? `I’m requesting ${asks.join(" + ")}.` : "I’m requesting a quick response.";
+
+    const catLine = cat ? `Category: ${cat}\n` : "";
+    const extra = safe(message.value) ? `\n\n${safe(message.value)}\n` : "";
+
+    return (
+`${who}
+
+I’m sharing a short, non-sensitive handle linked to a sealed Proof-of-Thought record (timestamped).
+You will not receive the sealed underlying content.
+
+Handle: ${t}
+${catLine}Summary: ${s}
+
+${askLine}
+
+Respond here: ${link}${extra}
+Thank you.`
+    );
+  }
+
+  async function copyToClipboard(text){
+    try{ await navigator.clipboard.writeText(text); return true; }
+    catch(e){ return false; }
+  }
+
+  genLink.addEventListener("click", () => {
+    const link = buildInviteLink();
+    inviteLink.textContent = link;
+    inviteText.textContent = buildInviteText(link);
+    out.style.display = "block";
+    copyMsg.disabled = false;
+  });
+
+  copyMsg.addEventListener("click", async () => {
+    const ok = await copyToClipboard(inviteText.textContent);
+    copyMsg.textContent = ok ? "Copied ✓" : "Copy failed";
+    setTimeout(() => (copyMsg.textContent = "Copy message"), 1100);
+  });
+
+  reset.addEventListener("click", () => {
+    handleTitle.value = "";
+    handleSummary.value = "";
+    recName.value = "";
+    recEmail.value = "";
+    message.value = "";
+    category.value = "";
+    askAck.checked = true;
+    askVal.checked = true;
+    askComment.checked = false;
+    expire.checked = true;
+    singleUse.checked = true;
+    anon.checked = false;
+    updateCounts(); updatePreview();
+    out.style.display = "none";
+    copyMsg.disabled = true;
+  });
+
+  [handleTitle, handleSummary].forEach(x => x.addEventListener("input", () => { updateCounts(); updatePreview(); }));
+  [askAck, askVal, askComment].forEach(x => x.addEventListener("change", updatePreview));
+
+  // init
+  updateCounts(); updatePreview();
+</script>
+</body>
+</html>

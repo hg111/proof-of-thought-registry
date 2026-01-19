@@ -134,6 +134,43 @@ function ensure() {
     created_at_utc TEXT NOT NULL
   );
   `);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS traction_signals(
+      id TEXT PRIMARY KEY,
+      record_id TEXT NOT NULL,
+      type TEXT NOT NULL,
+      responder_name TEXT,
+      responder_role TEXT,
+      val_bucket TEXT,
+      val_exact TEXT,
+      note TEXT,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_traction_record ON traction_signals(record_id);
+  `);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS traction_invites(
+    token TEXT PRIMARY KEY,
+    record_id TEXT NOT NULL,
+    creator_name TEXT,
+    role_label TEXT,
+    is_used INTEGER DEFAULT 0,
+    created_at TEXT NOT NULL,
+    expires_at TEXT,
+    custom_title TEXT,
+    custom_summary TEXT,
+    recipient_name TEXT
+  );
+    CREATE INDEX IF NOT EXISTS idx_traction_invites_record ON traction_invites(record_id);
+  `);
+
+  // --- MIGRATION: fields on traction_invites ---
+  const tiCols = db.prepare(`PRAGMA table_info(traction_invites)`).all() as Array<{ name: string }>;
+  const tiColNames = new Set(tiCols.map(c => c.name));
+  if (!tiColNames.has("custom_title")) db.exec(`ALTER TABLE traction_invites ADD COLUMN custom_title TEXT;`);
+  if (!tiColNames.has("custom_summary")) db.exec(`ALTER TABLE traction_invites ADD COLUMN custom_summary TEXT;`);
+  if (!tiColNames.has("recipient_name")) db.exec(`ALTER TABLE traction_invites ADD COLUMN recipient_name TEXT;`);
 
   // --- MIGRATION: registry_no on submissions ---
   const cols = db.prepare(`PRAGMA table_info(submissions)`).all() as Array<{ name: string }>;
@@ -338,8 +375,21 @@ export function dbMarkIssued(
   dbUpdatePublicChainIndex(id);
 }
 
-export function dbGetSubmission(id: string): SubmissionRow | null {
-  const row = getDb().prepare(`SELECT * FROM submissions WHERE id = ? `).get(id) as SubmissionRow | undefined;
+export function dbGetSubmission(idOrRegistry: string): SubmissionRow | null {
+  // 1. Try Registry Number format (R-000... or raw digits)
+  if (idOrRegistry.toString().startsWith('R-')) {
+    const num = parseInt(idOrRegistry.replace('R-', ''), 10);
+    const row = getDb().prepare(`SELECT * FROM submissions WHERE registry_no = ?`).get(num) as SubmissionRow | undefined;
+    if (row) return row;
+  }
+
+  if (/^\d+$/.test(idOrRegistry)) {
+    const row = getDb().prepare(`SELECT * FROM submissions WHERE registry_no = ?`).get(idOrRegistry) as SubmissionRow | undefined;
+    if (row) return row;
+  }
+
+  // 2. Fallback to UUID
+  const row = getDb().prepare(`SELECT * FROM submissions WHERE id = ? `).get(idOrRegistry) as SubmissionRow | undefined;
   return row ?? null;
 }
 
@@ -598,4 +648,79 @@ export function dbUpdatePublicChainIndex(submissionId: string) {
 export function dbGetLatestAnchor(): LedgerAnchorRow | null {
   const row = getDb().prepare(`SELECT * FROM ledger_anchors ORDER BY created_at_utc DESC LIMIT 1`).get() as LedgerAnchorRow | undefined;
   return row ?? null;
+}
+
+// --- Traction Signals (Phase 2) ---
+
+export function dbGetRecentSubmissions(limit: number = 10) {
+  return getDb().prepare(`
+        SELECT id, registry_no, title, created_at 
+        FROM submissions 
+        ORDER BY created_at DESC 
+        LIMIT ?
+    `).all(limit) as { id: string, registry_no: number, title: string, created_at: string }[];
+}
+
+export type TractionSignalRow = {
+  id: string;
+  record_id: string;
+  type: string; // 'ack', 'valuation', 'request_more', 'decline'
+  responder_name: string | null;
+  responder_role: string | null; // e.g. 'Investor', 'Expert'
+  val_bucket: string | null;     // e.g. '$10k-$50k'
+  val_exact: string | null;      // e.g. '$25,000'
+  note: string | null;
+  created_at: string;
+};
+
+export function dbInsertSignal(s: TractionSignalRow) {
+  getDb().prepare(`
+    INSERT INTO traction_signals(
+      id, record_id, type, responder_name, responder_role,
+      val_bucket, val_exact, note, created_at
+    ) VALUES(
+      @id, @record_id, @type, @responder_name, @responder_role,
+      @val_bucket, @val_exact, @note, @created_at
+    )
+  `).run(s);
+}
+
+export function dbGetSignalsForRecord(recordId: string): TractionSignalRow[] {
+  return getDb().prepare(`
+    SELECT * FROM traction_signals 
+    WHERE record_id = ? 
+    ORDER BY created_at DESC
+  `).all(recordId) as TractionSignalRow[];
+}
+
+// --- Traction Invites ---
+
+export function dbCreateInvite(
+  token: string,
+  recordId: string,
+  creatorName: string,
+  roleLabel: string,
+  createdAt: string,
+  customTitle?: string,
+  customSummary?: string,
+  recipientName?: string
+) {
+  getDb().prepare(`
+    INSERT INTO traction_invites (
+      token, record_id, creator_name, role_label, is_used, created_at,
+      custom_title, custom_summary, recipient_name
+    )
+    VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?)
+  `).run(
+    token, recordId, creatorName, roleLabel, createdAt,
+    customTitle || null, customSummary || null, recipientName || null
+  );
+}
+
+export function dbGetInvite(token: string) {
+  return getDb().prepare(`SELECT * FROM traction_invites WHERE token = ?`).get(token) as {
+    token: string, record_id: string, creator_name: string, role_label: string,
+    is_used: number, created_at: string, expires_at: string | null,
+    custom_title: string | null, custom_summary: string | null, recipient_name: string | null
+  } | undefined;
 }

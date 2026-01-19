@@ -144,6 +144,18 @@ export default async function SuccessPage({ searchParams }: { searchParams: { id
           </Button>
         ) : null}
 
+        <Button
+          href={`/traction?record_id=${encodeURIComponent(sub.id)}`}
+          tooltip={
+            <>
+              <strong>Traction Dashboard (Beta).</strong><br />
+              View signals, acknowledgements, and valuations for this record.
+            </>
+          }
+        >
+          📊 View Traction
+        </Button>
+
         {sub.record_class === "ENGRAVED" && sub.seal_object_key ? (
           <Button
             href={`/api/seal/${encodeURIComponent(sub.id)}/download?t=${encodeURIComponent(t)}`}
