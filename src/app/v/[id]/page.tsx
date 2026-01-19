@@ -127,9 +127,19 @@ export default function RadiantVerifierPage() {
                     })()}
                 </div>
 
-                {/* 2. PROOF PANEL */}
                 <div className="radiant-box radiant-box-proof">
-                    <div className="radiant-proof-header">
+                    <div className="radiant-proof-header" style={{ position: 'relative' }}>
+                        <div style={{
+                            position: 'absolute',
+                            top: '32px',
+                            right: '32px',
+                            fontSize: '13px',
+                            fontWeight: 500,
+                            color: 'rgba(255,255,255,0.5)',
+                            letterSpacing: '0.5px'
+                        }}>
+                            PROOF OF THOUGHT™
+                        </div>
                         <div className="radiant-kicker">Genesis Record</div>
                         <h2 className="radiant-h2">Cryptographic Proof</h2>
                     </div>

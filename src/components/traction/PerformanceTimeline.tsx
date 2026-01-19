@@ -162,7 +162,7 @@ export default function PerformanceTimeline({ signals = [], recordCreated }: { s
                 position: "absolute",
                 left: "0px",
                 right: "0px",
-                top: "44px",
+                top: "10px",
                 height: "2px",
                 background: "rgba(255,255,255,.35)" // Brighter (was .25)
             });
@@ -259,7 +259,7 @@ export default function PerformanceTimeline({ signals = [], recordCreated }: { s
 
                 // Brighter text for visibility
                 el.innerHTML = `
-            <div class="stem" style="height: ${10 + (lane * 25)}px"></div>
+            <div class="stem" style="height: ${20 + (lane * 24)}px"></div>
             <div class="dot"${isFresh ? ' style="box-shadow: 0 0 8px #3b82f6;"' : ''}></div>
             <div class="type">${ev.type === 'sealed' ? 'Sealed' : ev.type === 'val' ? 'Valuation' : ev.type === 'ack' ? 'Acknowledgement' : ev.label}</div>
             <div class="lab">${ev.at.toLocaleString("en-US", { hour: 'numeric', minute: 'numeric', hour12: false })}</div>
