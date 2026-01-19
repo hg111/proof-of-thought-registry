@@ -14,5 +14,6 @@ export async function GET(req: NextRequest) {
     // For MVP demo, returns data publicly if you have the ID.
 
     const signals = dbGetSignalsForRecord(record_id);
+    console.log(`[API] Signals for ${record_id}: ${signals.length}`);
     return NextResponse.json({ signals });
 }
