@@ -7,8 +7,9 @@ import PerformanceTimeline from '@/components/traction/PerformanceTimeline';
 import './traction.css';
 
 // Using a Client Component wrapper to handle the feature flag + DOM safely
-export default function TractionReceiptPage({ initialRecordId, readOnly = false }: { initialRecordId?: string, readOnly?: boolean }) {
+export default function TractionReceiptPage() {
     const router = useRouter();
+    const readOnly = false;
     const [enabled, setEnabled] = useState<boolean | null>(null);
     const [selectedResponse, setSelectedResponse] = useState<any>(null);
     const [signals, setSignals] = useState<any[]>([]);
@@ -19,19 +20,14 @@ export default function TractionReceiptPage({ initialRecordId, readOnly = false 
     const [shareLoading, setShareLoading] = useState(false);
 
     const [record, setRecord] = useState<any>(null);
-    const [recordId, setRecordId] = useState<string | null>(initialRecordId || null);
+    const [recordId, setRecordId] = useState<string | null>(null);
 
     useEffect(() => {
-        if (initialRecordId) {
-            setRecordId(initialRecordId);
-            return;
-        }
-
         if (typeof window !== 'undefined') {
             const params = new URLSearchParams(window.location.search);
             setRecordId(params.get('record_id'));
         }
-    }, [initialRecordId]);
+    }, []);
 
     // Fetch Record Data
     // List State
@@ -257,7 +253,6 @@ export default function TractionReceiptPage({ initialRecordId, readOnly = false 
                                             <div className="traction-mVal">
                                                 {(() => {
                                                     const parseVal = (b: string) => {
-                                                        if (!b) return 0;
                                                         const s = b.toLowerCase().replace(/,/g, '');
 
                                                         // Handle standard buckets first (fast path)
