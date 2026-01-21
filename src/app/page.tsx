@@ -106,10 +106,15 @@ export default function Home() {
       </div>
 
       <div className="footer">
+        <a href="/">Dashboard</a>
+        <a href="/public-ledger">Public Ledger</a>
         <span>Verification Portal</span>
         <span>Terms</span>
         <span>Privacy</span>
         <span>Contact</span>
+      </div>
+      <div style={{ textAlign: "center", marginTop: 20, fontSize: 11, color: "var(--muted)" }}>
+        PROOF OF THOUGHT™ • Patent Pending
       </div>
     </>
   );
