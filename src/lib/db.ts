@@ -40,6 +40,8 @@ export function formatRegistryNo(n: number | null | undefined) {
   return `R-${String(n).padStart(16, "0")}`;
 }
 
+
+
 function ensure() {
   fs.mkdirSync(config.dataDir, { recursive: true });
   const db = new Database(dbFile);
@@ -104,6 +106,20 @@ function ensure() {
     );
     CREATE INDEX IF NOT EXISTS idx_daily_roots_computed_at ON daily_roots(computed_at);
   `);
+
+  // Schema Migration for Anchoring Phase 1
+  // We try/catch these individually because IF NOT EXISTS is not supported for ADD COLUMN in SQLite
+  const migrationCols = [
+    "ALTER TABLE daily_roots ADD COLUMN sequence_number INTEGER",
+    "ALTER TABLE daily_roots ADD COLUMN batch_start_at TEXT",
+    "ALTER TABLE daily_roots ADD COLUMN batch_end_at TEXT",
+    "ALTER TABLE daily_roots ADD COLUMN payload_hex TEXT",
+    "ALTER TABLE daily_roots ADD COLUMN status TEXT"
+  ];
+  for (const sql of migrationCols) {
+    try { db.prepare(sql).run(); } catch (e) { /* ignore duplicate column error */ }
+  }
+
   db.exec(`
     CREATE TABLE IF NOT EXISTS public_chains(
     chain_id TEXT PRIMARY KEY,
@@ -122,7 +138,7 @@ function ensure() {
   db.exec(`
     CREATE TABLE IF NOT EXISTS ledger_anchors(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    sequence INTEGER, -- Monotonic Anchor ID (v1 Protocol)
+    sequence INTEGER, --Monotonic Anchor ID(v1 Protocol)
     window_start_utc TEXT,
     window_end_utc TEXT,
     records_committed INTEGER,
@@ -136,16 +152,16 @@ function ensure() {
   `);
   db.exec(`
     CREATE TABLE IF NOT EXISTS traction_signals(
-      id TEXT PRIMARY KEY,
-      record_id TEXT NOT NULL,
-      type TEXT NOT NULL,
-      responder_name TEXT,
-      responder_role TEXT,
-      val_bucket TEXT,
-      val_exact TEXT,
-      note TEXT,
-      created_at TEXT NOT NULL
-    );
+    id TEXT PRIMARY KEY,
+    record_id TEXT NOT NULL,
+    type TEXT NOT NULL,
+    responder_name TEXT,
+    responder_role TEXT,
+    val_bucket TEXT,
+    val_exact TEXT,
+    note TEXT,
+    created_at TEXT NOT NULL
+  );
     CREATE INDEX IF NOT EXISTS idx_traction_record ON traction_signals(record_id);
   `);
 
@@ -168,9 +184,9 @@ function ensure() {
   // --- MIGRATION: fields on traction_invites ---
   const tiCols = db.prepare(`PRAGMA table_info(traction_invites)`).all() as Array<{ name: string }>;
   const tiColNames = new Set(tiCols.map(c => c.name));
-  if (!tiColNames.has("custom_title")) db.exec(`ALTER TABLE traction_invites ADD COLUMN custom_title TEXT;`);
-  if (!tiColNames.has("custom_summary")) db.exec(`ALTER TABLE traction_invites ADD COLUMN custom_summary TEXT;`);
-  if (!tiColNames.has("recipient_name")) db.exec(`ALTER TABLE traction_invites ADD COLUMN recipient_name TEXT;`);
+  if (!tiColNames.has("custom_title")) db.exec(`ALTER TABLE traction_invites ADD COLUMN custom_title TEXT; `);
+  if (!tiColNames.has("custom_summary")) db.exec(`ALTER TABLE traction_invites ADD COLUMN custom_summary TEXT; `);
+  if (!tiColNames.has("recipient_name")) db.exec(`ALTER TABLE traction_invites ADD COLUMN recipient_name TEXT; `);
 
   // --- MIGRATION: registry_no on submissions ---
   const cols = db.prepare(`PRAGMA table_info(submissions)`).all() as Array<{ name: string }>;
@@ -193,8 +209,8 @@ function ensure() {
 
   const hasMimeType = aCols.some(c => c.name === "mime_type");
   if (!hasMimeType) {
-    db.exec(`ALTER TABLE artifacts ADD COLUMN mime_type TEXT;`);
-    db.exec(`ALTER TABLE artifacts ADD COLUMN size_bytes INTEGER;`);
+    db.exec(`ALTER TABLE artifacts ADD COLUMN mime_type TEXT; `);
+    db.exec(`ALTER TABLE artifacts ADD COLUMN size_bytes INTEGER; `);
   }
 
   if (!colNames.has("registry_no")) {
@@ -242,7 +258,7 @@ function ensure() {
 
 let _db: Database.Database | null = null;
 
-function getDb() {
+export function getDb() {
   if (!_db) {
     _db = ensure();
   }
@@ -379,12 +395,12 @@ export function dbGetSubmission(idOrRegistry: string): SubmissionRow | null {
   // 1. Try Registry Number format (R-000... or raw digits)
   if (idOrRegistry.toString().startsWith('R-')) {
     const num = parseInt(idOrRegistry.replace('R-', ''), 10);
-    const row = getDb().prepare(`SELECT * FROM submissions WHERE registry_no = ?`).get(num) as SubmissionRow | undefined;
+    const row = getDb().prepare(`SELECT * FROM submissions WHERE registry_no = ? `).get(num) as SubmissionRow | undefined;
     if (row) return row;
   }
 
   if (/^\d+$/.test(idOrRegistry)) {
-    const row = getDb().prepare(`SELECT * FROM submissions WHERE registry_no = ?`).get(idOrRegistry) as SubmissionRow | undefined;
+    const row = getDb().prepare(`SELECT * FROM submissions WHERE registry_no = ? `).get(idOrRegistry) as SubmissionRow | undefined;
     if (row) return row;
   }
 
@@ -573,11 +589,11 @@ export function dbGetPublicChains(args: {
 
   // Fetch paginated rows
   const items = db.prepare(`
-    SELECT * FROM public_chains 
+  SELECT * FROM public_chains 
     WHERE is_public = 1 
     ORDER BY ${orderBy}
-    LIMIT ? OFFSET ?
-      `).all(args.limit, offset) as PublicChainRow[];
+  LIMIT ? OFFSET ?
+    `).all(args.limit, offset) as PublicChainRow[];
 
   return { items, total };
 }
@@ -622,15 +638,15 @@ export function dbUpdatePublicChainIndex(submissionId: string) {
   // Upsert into public_chains
   db.prepare(`
     INSERT INTO public_chains(
-        chain_id, genesis_certificate_id, genesis_issued_at_utc, sealed_count,
-        last_seal_at_utc, custody_status, is_public, created_at_utc, updated_at_utc
-      ) VALUES(
-        @chain_id, @genesis_certificate_id, @genesis_issued_at_utc, @sealed_count,
-        @last_seal_at_utc, 'Active', @is_public, @now, @now
-      )
+      chain_id, genesis_certificate_id, genesis_issued_at_utc, sealed_count,
+      last_seal_at_utc, custody_status, is_public, created_at_utc, updated_at_utc
+    ) VALUES(
+      @chain_id, @genesis_certificate_id, @genesis_issued_at_utc, @sealed_count,
+      @last_seal_at_utc, 'Active', @is_public, @now, @now
+    )
     ON CONFLICT(chain_id) DO UPDATE SET
-      genesis_issued_at_utc = excluded.genesis_issued_at_utc,
-      sealed_count = excluded.sealed_count,
+  genesis_issued_at_utc = excluded.genesis_issued_at_utc,
+    sealed_count = excluded.sealed_count,
     last_seal_at_utc = excluded.last_seal_at_utc,
     is_public = excluded.is_public,
     updated_at_utc = excluded.updated_at_utc
@@ -645,9 +661,28 @@ export function dbUpdatePublicChainIndex(submissionId: string) {
   });
 }
 
-export function dbGetLatestAnchor(): LedgerAnchorRow | null {
-  const row = getDb().prepare(`SELECT * FROM ledger_anchors ORDER BY created_at_utc DESC LIMIT 1`).get() as LedgerAnchorRow | undefined;
-  return row ?? null;
+export function dbGetLatestAnchor() {
+  const db = getDb();
+  // Get the latest persisted root (either PENDING or ANCHORED)
+  const row = db.prepare(`
+  SELECT * FROM daily_roots 
+    ORDER BY sequence_number DESC, computed_at DESC 
+    LIMIT 1
+    `).get() as any;
+
+  if (!row) return null;
+
+  // Map to UI "Anchor" type
+  // Status mapping: PENDING_L2 -> pending, ANCHORED_L2 -> confirmed
+  const isConfirmed = row.status?.includes("ANCHORED");
+
+  return {
+    root_hash_hex: row.root_hash,
+    network: "L2 (OPTIMISM MAINNET)", // Updated for Anchoring Phase 1
+    status: isConfirmed ? "confirmed" : "pending",
+    txid: row.published_url ? row.published_url.split("/tx/")[1] : null,
+    explorer_url: row.published_url
+  };
 }
 
 // --- Traction Signals (Phase 2) ---
@@ -656,8 +691,8 @@ export function dbGetRecentSubmissions(limit: number = 10) {
   return getDb().prepare(`
         SELECT id, registry_no, title, created_at 
         FROM submissions 
-        ORDER BY created_at DESC 
-        LIMIT ?
+        ORDER BY created_at DESC
+  LIMIT ?
     `).all(limit) as { id: string, registry_no: number, title: string, created_at: string }[];
 }
 
@@ -682,15 +717,15 @@ export function dbInsertSignal(s: TractionSignalRow) {
       @id, @record_id, @type, @responder_name, @responder_role,
       @val_bucket, @val_exact, @note, @created_at
     )
-  `).run(s);
+      `).run(s);
 }
 
 export function dbGetSignalsForRecord(recordId: string): TractionSignalRow[] {
   return getDb().prepare(`
-    SELECT * FROM traction_signals 
-    WHERE record_id = ? 
+  SELECT * FROM traction_signals 
+    WHERE record_id = ?
     ORDER BY created_at DESC
-  `).all(recordId) as TractionSignalRow[];
+      `).all(recordId) as TractionSignalRow[];
 }
 
 // --- Traction Invites ---
@@ -706,11 +741,11 @@ export function dbCreateInvite(
   recipientName?: string
 ) {
   getDb().prepare(`
-    INSERT INTO traction_invites (
-      token, record_id, creator_name, role_label, is_used, created_at,
-      custom_title, custom_summary, recipient_name
-    )
-    VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?)
+    INSERT INTO traction_invites(
+        token, record_id, creator_name, role_label, is_used, created_at,
+        custom_title, custom_summary, recipient_name
+      )
+  VALUES(?, ?, ?, ?, 0, ?, ?, ?, ?)
   `).run(
     token, recordId, creatorName, roleLabel, createdAt,
     customTitle || null, customSummary || null, recipientName || null
@@ -718,7 +753,7 @@ export function dbCreateInvite(
 }
 
 export function dbGetInvite(token: string) {
-  return getDb().prepare(`SELECT * FROM traction_invites WHERE token = ?`).get(token) as {
+  return getDb().prepare(`SELECT * FROM traction_invites WHERE token = ? `).get(token) as {
     token: string, record_id: string, creator_name: string, role_label: string,
     is_used: number, created_at: string, expires_at: string | null,
     custom_title: string | null, custom_summary: string | null, recipient_name: string | null

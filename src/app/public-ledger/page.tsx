@@ -26,14 +26,9 @@ function safeFormat(dateStr: string | null, fmt: string): string {
     const ss = p(d.getUTCSeconds());
 
     if (fmt === "yyyy-MM-dd HH:mm") {
-        // Requested: 2026.01.10 • 03:43:37 UTC
-        // We ignore the exact fmt string args and just return the standardized display format
-        // But we must respect if the caller wants ONLY date? 
-        // Let's stick to the requested "full format".
         return `${yyyy}.${MM}.${dd} • ${HH}:${mm}:${ss} UTC`;
     }
     if (fmt === "yyyy-MM-dd") {
-        // Just date? User didn't specify, but let's keep it consistent.
         return `${yyyy}.${MM}.${dd}`;
     }
 
@@ -116,9 +111,11 @@ export default function PublicLedgerPage() {
                         A transparency log of all publicly visible Proof-of-Thought chains.
                         No private content or keys are disclosed here.
                     </p>
+                    <p className="mt-4 text-sm font-mono text-gray-500">
+                        Daily anchors on L2, weekly anchors on Bitcoin.
+                    </p>
                 </div>
 
-                {/* Controls */}
                 {/* Controls */}
                 <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, gap: 16 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -139,7 +136,6 @@ export default function PublicLedgerPage() {
                     </div>
                 </div>
 
-                {/* Table Container - Scrollable */}
                 {/* Table Container - Scrollable */}
                 <div className="ledgerContainer">
                     <div className="ledgerScroll">
