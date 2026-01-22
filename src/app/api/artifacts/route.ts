@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
 
   const parent = dbGetSubmission(parentId);
   const isDev = process.env.NODE_ENV === "development";
-  if (!parent || (parent.status !== "issued" && !isDev)) {
+  if (!parent || ((parent.status !== "issued" && parent.status !== "paid") && !isDev)) {
     console.error(`Artifact Upload Failed: Parent ${parentId}, status=${parent?.status}`);
     return NextResponse.json({
       error: "parent not issued",

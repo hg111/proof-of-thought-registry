@@ -64,38 +64,35 @@ function fullHexHash(input: string) {
   return (input || "").toLowerCase().replace(/[^0-9a-f]/g, "");
 }
 
+import os from "os";
+
+// ... (existing imports)
+
 export async function generateSealPng(args: {
   certId: string;
   issuedAtUtcIso: string;
   variant: Variant;
-  registryNo: string;          // NEW
-  contentHash: string;         // NEW (full)
-  verificationUrl: string;     // NEW
-  holderName: string;          // NEW
+  registryNo: string;
+  contentHash: string;
+  verificationUrl: string;
+  holderName: string;
   bg?: BgMode;
-  resize?: number;             // NEW: Explicit output size
+  resize?: number;
 }) {
   const scriptPath = path.join(process.cwd(), "scripts", "generate_seal.py");
-
-  // ✅ always 2x template for both tiers
-  const template = "proof_of_thought_timestamp_seal_template-2x.png";
-  // ✅ Always 2x template for both tiers
   const inputPath = path.join(process.cwd(), "scripts", "templates", "proof_of_thought_timestamp_seal_template-2x.png");
-  const tmpDir = path.join(config.dataDir, "tmp");
-  ensureDir(tmpDir);
 
-  const outPath = path.join(tmpDir, `seal_${args.certId}_${args.variant}.png`);
+  // USE EPHEMERAL TMP (not persistent /app/data)
+  const tmpDir = os.tmpdir();
+  const outPath = path.join(tmpDir, `seal_${args.certId}_${args.variant}_${Date.now()}.png`);
 
-  const dateText = toSealDateSafe(args.issuedAtUtcIso); // ✅ fixed width, dots, UTC, no spill
-  const hashHex = `SHA-256: ${fullHexHash(args.contentHash)}`; // ✅ restores prefix
+  const dateText = toSealDateSafe(args.issuedAtUtcIso);
+  const hashHex = `SHA-256: ${fullHexHash(args.contentHash)}`;
 
-  // Detect correct font path (Docker/Linux vs Local/Mac)
-  // Alpine 'font-noto' installs to /usr/share/fonts/noto/
   let fontPath = "/System/Library/Fonts/Supplemental/Arial Bold.ttf";
   if (process.platform === "linux") {
     fontPath = "/usr/share/fonts/noto/NotoSans-Bold.ttf";
     if (!fs.existsSync(fontPath)) {
-      // Fallback to regular if bold is missing
       fontPath = "/usr/share/fonts/noto/NotoSans-Regular.ttf";
     }
   }
@@ -109,11 +106,8 @@ export async function generateSealPng(args: {
     "--verify", args.verificationUrl || "",
     "--holder", args.holderName || "",
     "--font", fontPath,
-
-    // ✅ NEW: tell python which output mode + background to use
-    "--variant", args.variant,                 // "MINTED" | "ENGRAVED"
-    "--bg", args.bg ?? "transparent",          // "transparent" | "white"
-
+    "--variant", args.variant,
+    "--bg", args.bg ?? "transparent",
     "--input", inputPath,
     "--output", outPath,
   ];
@@ -122,7 +116,15 @@ export async function generateSealPng(args: {
     scriptArgs.push("--resize", String(args.resize));
   }
 
-  await run("python3", scriptArgs);
-
-  return fs.readFileSync(outPath);
+  try {
+    await run("python3", scriptArgs);
+    const buffer = fs.readFileSync(outPath);
+    // CLEANUP
+    try { fs.unlinkSync(outPath); } catch (e) { console.error("Failed to cleanup tmp seal:", e); }
+    return buffer;
+  } catch (err) {
+    // Attempt cleanup on error too
+    try { if (fs.existsSync(outPath)) fs.unlinkSync(outPath); } catch (e) { }
+    throw err;
+  }
 }
