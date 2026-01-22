@@ -320,16 +320,15 @@ ${link}`;
                                             <button className="ack-btn ghost" onClick={handleCopy}>{copyStatus}</button>
 
                                             {/* Send Now Button */}
-                                            {recEmail.trim() && (
-                                                <button
-                                                    className="ack-btn primary"
-                                                    onClick={handleSendNow}
-                                                    disabled={sendLoading}
-                                                    style={{ background: '#22c55e', borderColor: '#22c55e' }}
-                                                >
-                                                    {sendLoading ? 'Sending...' : 'Send Now'}
-                                                </button>
-                                            )}
+                                            <button
+                                                className="ack-btn primary"
+                                                onClick={handleSendNow}
+                                                disabled={sendLoading}
+                                                style={{ background: '#22c55e', borderColor: '#22c55e', opacity: recEmail.trim() ? 1 : 0.5 }}
+                                                title={recEmail.trim() ? "Send email" : "Enter recipient email above to send"}
+                                            >
+                                                {sendLoading ? 'Sending...' : 'Send Now'}
+                                            </button>
                                         </div>
                                     </div>
                                 </div>

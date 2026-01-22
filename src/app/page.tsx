@@ -45,6 +45,7 @@ export default function Home() {
             <li>A formal certificate of conception &amp; possession</li>
             <li>A private custody vault that preserves your sealed ideas </li>
             <li>A cryptographic chain records your idea as it evolves over time</li>
+            <li>Early traction for original human ideas, helping transform them into tradeable assets</li>
           </ul>
         </div>
 
@@ -54,6 +55,7 @@ export default function Home() {
             <li>Not a patent filing</li>
             <li>Not legal advice</li>
             <li>Not a government registry</li>
+            <li>Not a disclosure or publication of your idea</li>
           </ul>
         </div>
       </div>
@@ -66,6 +68,7 @@ export default function Home() {
           <li><b>Enter your idea.</b> Paste your original text.</li>
           <li><b>We time-seal and preserve it.</b> We compute a cryptographic fingerprint and record custody.</li>
           <li><b>Receive your certificate.</b> Download a formal PDF with a public verification link.</li>
+          <li><b>Get traction.</b> Receive early market validation or valuation signals.</li>
         </ol>
       </div>
 
@@ -106,7 +109,6 @@ export default function Home() {
       </div>
 
       <div className="footer">
-        <a href="/">Dashboard</a>
         <a href="/public-ledger">Public Ledger</a>
         <span>Verification Portal</span>
         <span>Terms</span>

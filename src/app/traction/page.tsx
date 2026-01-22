@@ -36,7 +36,21 @@ export default function TractionReceiptPage() {
     useEffect(() => {
         if (!recordId) {
             // Load list if no ID
-            fetch('/api/traction/list')
+            // Check localStorage for "my records"
+            let url = '/api/traction/list';
+            try {
+                const stored = localStorage.getItem('pot_my_records');
+                if (stored) {
+                    const ids = JSON.parse(stored);
+                    if (Array.isArray(ids) && ids.length > 0) {
+                        url += `?ids=${ids.join(',')}`;
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to read local records", e);
+            }
+
+            fetch(url)
                 .then(res => res.json())
                 .then(data => {
                     if (data.records) setRecentRecords(data.records);

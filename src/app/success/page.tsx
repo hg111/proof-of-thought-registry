@@ -17,6 +17,7 @@ const CopyPrivateControlLink = nextDynamic(
 const SealPoller = nextDynamic(() => import("@/components/SealPoller"), { ssr: false });
 const ChainTimeline = nextDynamic(() => import("@/components/ChainTimeline"), { ssr: true });
 const SuccessPageWrapper = nextDynamic(() => import("@/components/SuccessPageWrapper"), { ssr: false });
+const SessionRecorder = nextDynamic(() => import("@/components/SessionRecorder"), { ssr: false });
 
 const fmtUtcSafe = (v: any) => {
   const s = String(v ?? "").trim();
@@ -62,6 +63,7 @@ export default async function SuccessPage({ searchParams }: { searchParams: { id
 
   return (
     <SuccessPageWrapper>
+      <SessionRecorder id={sub.id} />
       <div className="kicker">Issued</div>
       <h1 className="h1">Certificate available</h1>
       <p className="subhead">

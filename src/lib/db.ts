@@ -687,8 +687,27 @@ export function dbGetLatestAnchor() {
 
 // --- Traction Signals (Phase 2) ---
 
-export function dbGetRecentSubmissions(limit: number = 10) {
-  return getDb().prepare(`
+export function dbGetRecentSubmissions(limit: number = 10, ids?: string[]) {
+  const db = getDb();
+  if (ids && ids.length > 0) {
+    const placeholders = ids.map(() => '?').join(',');
+    return db.prepare(`
+        SELECT id, registry_no, title, created_at 
+        FROM submissions 
+        WHERE id IN (${placeholders})
+        ORDER BY created_at DESC
+        LIMIT ?
+    `).all(...ids, limit) as { id: string, registry_no: number, title: string, created_at: string }[];
+  }
+
+  // Fallback to global recent if no IDs provided (or we can decide to return empty)
+  // For "My Records" logic, we usually want ONLY the IDs we asked for.
+  // But to preserve existing behavior for global view (if any), we keep the fallback?
+  // Actually, for privacy, we might want to ONLY return IDs if requested.
+  // But for the "Public Ledger" / "Discovery" feel, maybe global is okay?
+  // Let's keep global fallback for now but the UI will prefer IDs.
+
+  return db.prepare(`
         SELECT id, registry_no, title, created_at 
         FROM submissions 
         ORDER BY created_at DESC
