@@ -16,16 +16,18 @@ export function NavWrapper() {
             marginBottom: "32px",
             boxShadow: "0 1px 2px rgba(0,0,0,0.02)"
         }}>
-            <div style={{
-                fontSize: "11px",
-                fontWeight: "bold",
-                letterSpacing: "0.2em",
-                textTransform: "uppercase",
-                marginRight: "32px",
-                color: "#111"
-            }}>
-                PROOF OF THOUGHT™
-            </div>
+            <a href="/" style={{ textDecoration: "none", color: "inherit" }}>
+                <div style={{
+                    fontSize: "11px",
+                    fontWeight: "normal",
+                    letterSpacing: "0.2em",
+                    textTransform: "uppercase",
+                    marginRight: "32px",
+                    color: "#111"
+                }}>
+                    PROOF OF THOUGHT™
+                </div>
+            </a>
             <div style={{
                 display: "flex",
                 alignItems: "center",
@@ -33,9 +35,9 @@ export function NavWrapper() {
                 fontWeight: 500,
                 color: "#666"
             }}>
-                <a href="/" style={{ textDecoration: "none", color: "inherit" }}>Dashboard</a>
+                <a href="/traction" style={{ textDecoration: "none", color: pathname === "/traction" ? "#111" : "#666" }}>Traction</a>
                 <span style={{ margin: "0 16px", color: "#ddd" }}>|</span>
-                <a href="/public-ledger" style={{ textDecoration: "none", color: "#2563eb" }}>Public Ledger</a>
+                <a href="/public-ledger" style={{ textDecoration: "none", color: pathname === "/public-ledger" ? "#111" : "#666" }}>Public Ledger</a>
             </div>
         </nav>
     );
