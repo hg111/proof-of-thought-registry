@@ -111,7 +111,7 @@ export default function Home() {
         <span>Verification Portal</span>
         <span>Terms</span>
         <span>Privacy</span>
-        <span>Contact</span>
+        <a href="/contact">Contact</a>
       </div>
       <div style={{ textAlign: "center", marginTop: 20, fontSize: 11, color: "var(--muted)" }}>
         PROOF OF THOUGHT™ • Patent Pending

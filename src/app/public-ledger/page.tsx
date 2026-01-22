@@ -89,30 +89,16 @@ export default function PublicLedgerPage() {
     return (
         <div className="min-h-screen bg-white text-black font-sans selection:bg-black selection:text-white">
             {/* Header */}
-            <header className="p-6 border-b border-gray-200 flex justify-between items-center">
-                <div className="flex items-center gap-4">
-                    <Link href="/" className="font-bold tracking-tight text-xl hover:opacity-70 transition-opacity">
-                        Proof of Thought™
-                    </Link>
-                    <span className="text-gray-400">/</span>
-                    <span className="font-medium text-gray-600">Public Ledger</span>
-                </div>
-                <div className="text-sm font-mono text-gray-500">
-                    v1.0.0
-                </div>
-            </header>
+
 
             <main className="max-w-6xl mx-auto p-6 md:p-12">
                 <div className="mb-12">
-                    <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">
+                    <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-0" style={{ marginBottom: '8px', lineHeight: 1.1 }}>
                         Public Chain Ledger
                     </h1>
-                    <p className="text-xl text-gray-600 max-w-2xl text-balance">
-                        A transparency log of all publicly visible Proof-of-Thought chains.
-                        No private content or keys are disclosed here.
-                    </p>
-                    <p className="mt-4 text-sm font-mono text-gray-500">
-                        Daily anchors on L2, weekly anchors on Bitcoin.
+
+                    <p className="text-base text-gray-500 max-w-3xl text-balance" style={{ marginTop: 0 }}>
+                        A transparency log of all publicly visible Proof-of-Thought chains. No private content or keys are disclosed here. Daily anchors on L2, weekly anchors on Bitcoin.
                     </p>
                 </div>
 
@@ -258,7 +244,7 @@ export default function PublicLedgerPage() {
                     </div>
                 </div>
 
-            </main>
-        </div>
+            </main >
+        </div >
     );
 }

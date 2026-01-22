@@ -7,11 +7,35 @@ export function NavWrapper() {
     if (pathname === "/") return null;
 
     return (
-        <nav className="border-b bg-white px-6 py-3 flex items-center justify-between mb-8 shadow-sm">
-            <div className="font-bold text-lg tracking-tight">Proof of Thought™</div>
-            <div className="space-x-4 text-sm font-medium">
-                <a href="/" className="hover:underline">Dashboard</a>
-                <a href="/public-ledger" className="hover:underline text-blue-600">Public Ledger</a>
+        <nav style={{
+            display: "flex",
+            alignItems: "center",
+            padding: "16px 32px",
+            background: "white",
+            borderBottom: "1px solid #eee",
+            marginBottom: "32px",
+            boxShadow: "0 1px 2px rgba(0,0,0,0.02)"
+        }}>
+            <div style={{
+                fontSize: "11px",
+                fontWeight: "bold",
+                letterSpacing: "0.2em",
+                textTransform: "uppercase",
+                marginRight: "32px",
+                color: "#111"
+            }}>
+                PROOF OF THOUGHT™
+            </div>
+            <div style={{
+                display: "flex",
+                alignItems: "center",
+                fontSize: "14px",
+                fontWeight: 500,
+                color: "#666"
+            }}>
+                <a href="/" style={{ textDecoration: "none", color: "inherit" }}>Dashboard</a>
+                <span style={{ margin: "0 16px", color: "#ddd" }}>|</span>
+                <a href="/public-ledger" style={{ textDecoration: "none", color: "#2563eb" }}>Public Ledger</a>
             </div>
         </nav>
     );
