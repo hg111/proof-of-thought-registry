@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState, useRef } from "react";
 
 type Props =
-  | { href: string; children: React.ReactNode; disabled?: boolean; tooltip?: React.ReactNode; variant?: "primary" | "secondary"; size?: "small" | "normal" }
+  | { href: string; children: React.ReactNode; disabled?: boolean; tooltip?: React.ReactNode; variant?: "primary" | "secondary"; size?: "small" | "normal"; style?: React.CSSProperties }
   | {
     children: React.ReactNode;
     disabled?: boolean;
@@ -13,6 +13,7 @@ type Props =
     tooltip?: React.ReactNode;
     variant?: "primary" | "secondary";
     size?: "small" | "normal";
+    style?: React.CSSProperties;
   };
 
 export default function Button(props: Props) {
@@ -44,6 +45,7 @@ export default function Button(props: Props) {
     alignItems: "center",
     justifyContent: "center",
     boxSizing: "border-box",
+    ...((props as any).style || {}),
   };
 
   const tooltipStyle: React.CSSProperties = {

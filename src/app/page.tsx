@@ -31,7 +31,7 @@ export default function Home() {
         }}
       />
 
-      <Button href="/start">Start a Certificate</Button>
+      <Button href="/start" style={{ boxShadow: "0 0 15px rgba(66, 153, 225, 0.5)", borderColor: "#4299e1" }}>Get started</Button>
       <p className="small" style={{ marginTop: 18 }}>
         Not a patent filing. No lawyers required.
       </p>
@@ -74,16 +74,12 @@ export default function Home() {
 
       <Divider />
 
-
-
-
-
-
       {/* Authority Seal */}
-      <div className="heroSeal" style={{ margin: "30px 0" }}>
+      <div className="heroSeal" style={{ margin: "30px 0", textAlign: "center" }}>
         <img
           src="/assets/proof_of_thought_timestamp_seal.png"
           alt="Proof of Thought Timestamp Seal"
+          style={{ maxWidth: "100%", width: "150px", height: "auto" }}
         />
       </div>
 
