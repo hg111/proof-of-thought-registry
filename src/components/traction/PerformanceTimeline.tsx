@@ -185,8 +185,8 @@ export default function PerformanceTimeline({ signals = [], recordCreated }: { s
                     t.className = "traction-minorTick month"; // Class for visibility
                     t.style.left = `${toX(pct)}px`;
                     t.innerHTML = `
-            <div class="mStem" style="height: 12px; background: rgba(255,255,255,0.6);"></div>
-            <div class="mLab" style="opacity: 0.9; font-weight: 600; color: #fff;">${fmtMonth(d)}</div>
+            <div class="mStem" style="height: 19px; background: rgba(255,255,255,0.6);"></div>
+            <div class="mLab" style="opacity: 0.9; font-weight: 600; color: #fff; margin-top: -8px;">${fmtMonth(d)}</div>
           `;
                     track.appendChild(t);
                 }
@@ -211,8 +211,8 @@ export default function PerformanceTimeline({ signals = [], recordCreated }: { s
                     tick.className = "traction-minorTick";
                     tick.style.left = `${toX(pct)}px`;
                     tick.innerHTML = `
-            <div class="mStem" style="height: ${showLabel ? '8px' : '5px'}; background: rgba(255,255,255,0.5);"></div>
-            <div class="mLab" style="opacity: ${showLabel ? 0.9 : 0}; color: #fff;">${showLabel ? d.getDate() : ''}</div>
+            <div class="mStem" style="height: ${showLabel ? '15px' : '12px'}; background: rgba(255,255,255,0.5);"></div>
+            <div class="mLab" style="opacity: ${showLabel ? 0.9 : 0}; color: #fff; margin-top: -8px;">${showLabel ? d.getDate() : ''}</div>
           `;
                     track.appendChild(tick);
                     idx++;
@@ -222,10 +222,17 @@ export default function PerformanceTimeline({ signals = [], recordCreated }: { s
             // 3. Events
             const minDx = spanDays <= 14 ? 90 : 60;
             const lanes: number[] = [];
+            let lastDateStr = "";
 
             events.forEach(ev => {
                 const pct = pctBetween(ev.at, domainStart, domainEnd);
                 if (pct < -5 || pct > 105) return;
+
+                const dateStr = ev.at.toDateString();
+                if (lastDateStr && dateStr !== lastDateStr) {
+                    lanes.length = 0; // Reset stacking for new day
+                }
+                lastDateStr = dateStr;
 
                 const x = toX(pct);
 
@@ -257,12 +264,17 @@ export default function PerformanceTimeline({ signals = [], recordCreated }: { s
                 el.style.left = `${x}px`;
                 el.style.setProperty('--lane', String(lane));
 
-                // Brighter text for visibility
+                // Spacing logic (Standardized)
+                // Stem 12px, Type 2px, Lab -4px (Total ~25pt shift up)
+                const baseStemH = 12;
+                const typeMargin = '2px';
+                const labStyle = ' style="margin-top: -4px;"';
+
                 el.innerHTML = `
-            <div class="stem" style="height: ${20 + (lane * 24)}px"></div>
+            <div class="stem" style="height: ${baseStemH + (lane * 34)}px"></div>
             <div class="dot"${isFresh ? ' style="box-shadow: 0 0 8px #3b82f6;"' : ''}></div>
-            <div class="type">${ev.type === 'sealed' ? 'Sealed' : ev.type === 'val' ? 'Valuation' : ev.type === 'ack' ? 'Acknowledgement' : ev.label}</div>
-            <div class="lab">${ev.at.toLocaleString("en-US", { hour: 'numeric', minute: 'numeric', hour12: false })}</div>
+            <div class="type" style="margin-top: ${typeMargin};">${ev.type === 'sealed' ? 'Sealed' : ev.type === 'val' ? 'Valuation' : ev.type === 'ack' ? 'Ack..nt' : ev.label}</div>
+            <div class="lab"${labStyle}>${ev.at.toLocaleString("en-US", { hour: 'numeric', minute: 'numeric', hour12: false })}</div>
         `;
                 track.appendChild(el);
             });

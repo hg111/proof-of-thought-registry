@@ -62,8 +62,12 @@ Title: ${record.title || 'Untitled'}
 Requester: ${requester_email}
 Requested Tier: ${request_type}
 
-To grant access, go to your dashboard and send an invite:
-${new URL(req.url).origin}/traction?record_id=${record.id}
+To grant access, click this direct link to open your **Deal Room**:
+${new URL(req.url).origin}/traction/access?record_id=${record.id}
+
+1. Go to "Create Access Link"
+2. Select "${request_type}" disclosure
+3. Click "Generate Secure Link"
 
 (This is an automated notification.)`;
 

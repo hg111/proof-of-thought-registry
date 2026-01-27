@@ -13,14 +13,30 @@ export default function TractionReceiptPage() {
     const [enabled, setEnabled] = useState<boolean | null>(null);
     const [selectedResponse, setSelectedResponse] = useState<any>(null);
     const [signals, setSignals] = useState<any[]>([]);
+    const [logs, setLogs] = useState<any[]>([]);
+    const [tokens, setTokens] = useState<any[]>([]);
+
+    const [record, setRecord] = useState<any>(null);
+    const [recordId, setRecordId] = useState<string | null>(null);
 
     // Share State
     const [showShareInput, setShowShareInput] = useState(false);
     const [shareEmail, setShareEmail] = useState('');
     const [shareLoading, setShareLoading] = useState(false);
+    // ... (skip lines)
+    // Fetch Signals & Logs (Polling)
+    const fetchSignals = React.useCallback(() => {
+        if (!recordId) return;
+        fetch(`/api/traction/signals?record_id=${recordId}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.signals) setSignals(data.signals);
+                if (data.logs) setLogs(data.logs);
+            })
+            .catch(err => console.error("Failed to load signals", err));
+    }, [recordId]);
+    //...
 
-    const [record, setRecord] = useState<any>(null);
-    const [recordId, setRecordId] = useState<string | null>(null);
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -67,20 +83,11 @@ export default function TractionReceiptPage() {
             })
             .catch(err => console.error("Failed to load record", err));
 
-        // Fetch Signals (Polling)
-        const fetchSignals = () => {
-            fetch(`/api/traction/signals?record_id=${recordId}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.signals) setSignals(data.signals);
-                })
-                .catch(err => console.error("Failed to load signals", err));
-        };
-
+        // Fetch Signals & Logs (Polling)
         fetchSignals();
-        const interval = setInterval(fetchSignals, 3000);
+        const interval = setInterval(fetchSignals, 5000); // Polling logs every 5s
         return () => clearInterval(interval);
-    }, [recordId]);
+    }, [recordId, fetchSignals]);
 
     useEffect(() => {
         const isEnabled = isTractionUIEnabled();
@@ -232,14 +239,18 @@ export default function TractionReceiptPage() {
                                         <div className="traction-ctaRow">
                                             <button className="traction-btn primary" onClick={() => router.push(`/ack/invite?record_id=${recordId}`)}>Request acknowledgement</button>
                                             <button className="traction-btn" onClick={() => alert('Mock: Export')}>Export proof bundle</button>
-                                            <button className="traction-btn ghost" onClick={() => alert('Mock: Share')}>Copy verifier link</button>
+                                            <button className="traction-btn ghost" onClick={() => {
+                                                const url = `${window.location.origin}/v/${record?.registry_no ? `R-${String(record.registry_no).padStart(16, '0')}` : ""}?d=1`;
+                                                navigator.clipboard.writeText(url);
+                                                alert("Verifier link copied to clipboard!");
+                                            }}>Copy verifier link</button>
                                             <button
                                                 className="traction-btn ghost"
                                                 style={{ color: '#ff4444', fontWeight: 600, border: '1px solid #ff4444' }}
                                                 onClick={async () => {
                                                     if (confirm("Confirm: Clear all test signals for this record?")) {
                                                         await fetch(`/api/traction/reset?record_id=${recordId}`, { method: 'DELETE' });
-                                                        window.location.reload();
+                                                        fetchSignals(); // Refresh UI
                                                     }
                                                 }}
                                             >
@@ -372,7 +383,7 @@ export default function TractionReceiptPage() {
 
                                             {/* Share Controls */}
                                             {!showShareInput ? (
-                                                <div className="traction-ctaRow" style={{ marginTop: '0', gap: '8px' }}>
+                                                <div className="traction-ctaRow" style={{ marginTop: '0', gap: '4px' }}>
                                                     <button
                                                         className="traction-btn ghost"
                                                         style={{ fontSize: '11px', padding: '4px 8px' }}
@@ -381,14 +392,21 @@ export default function TractionReceiptPage() {
                                                             window.open(url, '_blank');
                                                         }}
                                                     >
-                                                        Preview
+                                                        Preview Public
                                                     </button>
                                                     <button
                                                         className="traction-btn ghost"
                                                         style={{ fontSize: '11px', padding: '4px 8px' }}
                                                         onClick={() => setShowShareInput(true)}
                                                     >
-                                                        Email Link
+                                                        Email Public
+                                                    </button>
+                                                    <button
+                                                        className="traction-btn ghost"
+                                                        style={{ fontSize: '11px', padding: '4px 8px' }}
+                                                        onClick={() => router.push(`/traction/access?record_id=${recordId}`)}
+                                                    >
+                                                        Manage Access
                                                     </button>
                                                 </div>
                                             ) : (
@@ -525,107 +543,133 @@ export default function TractionReceiptPage() {
                                 </div>
                             </div>
 
-                            {/* Activity Log */}
-                            <div className="traction-card">
-                                <div className="traction-pad">
-                                    <div className="traction-kicker">Activity log</div>
-                                    <div className="traction-title" style={{ fontSize: '15px' }}>Record activity</div>
-                                    <div className="traction-side">
-                                        <div className="item">
-                                            <h3>Sealed</h3>
-                                            <p>Canonical bytes generated + trusted timestamp bound.</p>
-                                            <p className="traction-pmeta">13:08</p>
-                                        </div>
-                                        <div className="item">
-                                            <h3>Invites sent</h3>
-                                            <p>3 recipients invited (manual send).</p>
-                                            <p className="traction-pmeta">13:22</p>
+                            {/* Right Column (Split Cards) */}
+                            {/* Right Column: Activity Log Only */}
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                <div className="traction-card" style={{ height: '100%' }}>
+                                    <div className="traction-pad">
+                                        <div className="traction-kicker">Activity log</div>
+                                        <div className="traction-title" style={{ fontSize: '15px' }}>Recent Activity</div>
+                                        <div className="traction-side" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+
+                                            {/* Logs (Last 20) */}
+                                            {logs.slice(0, 20).map((log: any) => (
+                                                <div key={log.id} className="item">
+                                                    {log.type === 'invite' ? (
+                                                        <>
+                                                            <h3>Invite sent</h3>
+                                                            <p>
+                                                                To: {log.token_label || "Recipient"} ({log.role_label || "Invitee"})
+                                                            </p>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <h3>Viewed by {log.token_label || "Unknown"}</h3>
+                                                            <p>
+                                                                IP: {log.ip_address === "::1" || log.ip_address === "127.0.0.1" ? "Localhost" : log.ip_address}
+                                                            </p>
+                                                        </>
+                                                    )}
+                                                    <p className="traction-pmeta">
+                                                        {new Date(log.atMs || log.accessed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </p>
+                                                </div>
+                                            ))}
+                                            {logs.length === 0 && (
+                                                <div className="item">
+                                                    <p style={{ opacity: 0.6 }}>No verified views yet.</p>
+                                                </div>
+                                            )}
+
+                                            <div className="item" style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '12px', marginTop: '8px' }}>
+                                                <h3>Sealed</h3>
+                                                <p>Canonical bytes generated + trusted timestamp bound.</p>
+                                                <p className="traction-pmeta">
+                                                    {record?.created_at ? new Date(record.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "..."}
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
+
                             </div>
                         </div>
-
                     </>
                 )}
-
-            </div >
+            </div>
 
             {/* Modal */}
-            <div className={`traction-modal ${selectedResponse ? 'open' : ''}`} onClick={(e) => {
-                if (e.target === e.currentTarget) setSelectedResponse(null);
-            }}>
-                <div className="traction-box">
-                    <div className="traction-hd">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <div className="traction-dot" style={{ background: selectedResponse?.typeClass === 'good' ? 'var(--good)' : (selectedResponse?.typeClass === 'warn' ? 'var(--warn)' : '#fff') }}></div>
-                            <h2>Response Details</h2>
+            {selectedResponse && (
+                <div className="traction-modal open" onClick={(e) => {
+                    if (e.target === e.currentTarget) setSelectedResponse(null);
+                }}>
+                    <div className="traction-box">
+                        <div className="traction-hd">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <div className="traction-dot" style={{ background: selectedResponse?.typeClass === 'good' ? 'var(--good)' : (selectedResponse?.typeClass === 'warn' ? 'var(--warn)' : '#fff') }}></div>
+                                <h2>Response Details</h2>
+                            </div>
+                            <button className="traction-x" onClick={() => setSelectedResponse(null)}>✕</button>
                         </div>
-                        <button className="traction-x" onClick={() => setSelectedResponse(null)}>✕</button>
-                    </div>
-                    <div className="traction-bd">
-                        {selectedResponse && (
-                            <>
+                        <div className="traction-bd">
+                            <div className="traction-kv">
+                                <div className="k">Responder</div>
+                                <div className="v">{selectedResponse.responder} <span style={{ fontWeight: 400, opacity: 0.6 }}>({selectedResponse.role})</span></div>
+                            </div>
+                            <div className="traction-kv">
+                                <div className="k">Signal Type</div>
+                                <div className="v">{selectedResponse.type}</div>
+                            </div>
+                            {selectedResponse.valuation && (
                                 <div className="traction-kv">
-                                    <div className="k">Responder</div>
-                                    <div className="v">{selectedResponse.responder} <span style={{ fontWeight: 400, opacity: 0.6 }}>({selectedResponse.role})</span></div>
+                                    <div className="k">Valuation Estimate</div>
+                                    <div className="v" style={{ color: 'var(--warn)', fontWeight: 600 }}>{selectedResponse.valuation}</div>
                                 </div>
-                                <div className="traction-kv">
-                                    <div className="k">Signal Type</div>
-                                    <div className="v">{selectedResponse.type}</div>
-                                </div>
-                                {selectedResponse.valuation && (
-                                    <div className="traction-kv">
-                                        <div className="k">Valuation Estimate</div>
-                                        <div className="v" style={{ color: 'var(--warn)', fontWeight: 600 }}>{selectedResponse.valuation}</div>
-                                    </div>
-                                )}
-                                <div className="traction-kv">
-                                    <div className="k">Timestamp</div>
-                                    <div className="v">{selectedResponse.date}</div>
-                                </div>
-                                <div className="traction-kv">
-                                    <div className="k">Content Note</div>
-                                    <div className="v" style={{ fontStyle: 'italic', opacity: 0.9 }}>“{selectedResponse.note}”</div>
-                                </div>
-                                <div className="traction-kv">
-                                    <div className="k">Signal Hash</div>
-                                    <div className="v"><code style={{ background: 'rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: '4px' }}>{selectedResponse.hash}</code></div>
-                                </div>
-                                <div className="traction-kv">
-                                    <div className="k">Credibility</div>
-                                    <div className="v">{selectedResponse.sigLevel}</div>
-                                </div>
+                            )}
+                            <div className="traction-kv">
+                                <div className="k">Timestamp</div>
+                                <div className="v">{selectedResponse.date}</div>
+                            </div>
+                            <div className="traction-kv">
+                                <div className="k">Content Note</div>
+                                <div className="v" style={{ fontStyle: 'italic', opacity: 0.9 }}>“{selectedResponse.note}”</div>
+                            </div>
+                            <div className="traction-kv">
+                                <div className="k">Signal Hash</div>
+                                <div className="v"><code style={{ background: 'rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: '4px' }}>{selectedResponse.hash}</code></div>
+                            </div>
+                            <div className="traction-kv">
+                                <div className="k">Credibility</div>
+                                <div className="v">{selectedResponse.sigLevel}</div>
+                            </div>
 
-                                {/* Grant Access Action */}
-                                {selectedResponse.rawType === 'request_access' && (
-                                    <div style={{ marginTop: '20px', padding: '16px', background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '8px' }}>
-                                        <div style={{ fontSize: '14px', marginBottom: '10px', fontWeight: 600 }}>Action Required</div>
-                                        <p style={{ fontSize: '13px', opacity: 0.8, marginBottom: '12px' }}>
-                                            This user requested access to view the full proof.
-                                        </p>
-                                        <button
-                                            className="traction-btn primary"
-                                            style={{ width: '100%' }}
-                                            onClick={() => {
-                                                const email = encodeURIComponent(selectedResponse.responder);
-                                                router.push(`/ack/invite?record_id=${recordId}&email=${email}&action=grant`);
-                                            }}
-                                        >
-                                            Grant Access (Send Invite)
-                                        </button>
-                                    </div>
-                                )}
-                            </>
-                        )}
-                        <div className="traction-foot micro">
-                            Verifiable via public registry using the Record ID and Signal Hash.
+                            {/* Grant Access Action */}
+                            {selectedResponse.rawType === 'request_access' && (
+                                <div style={{ marginTop: '20px', padding: '16px', background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '8px' }}>
+                                    <div style={{ fontSize: '14px', marginBottom: '10px', fontWeight: 600 }}>Action Required</div>
+                                    <p style={{ fontSize: '13px', opacity: 0.8, marginBottom: '12px' }}>
+                                        This user requested access to view the full proof.
+                                    </p>
+                                    <button
+                                        className="traction-btn primary"
+                                        style={{ width: '100%' }}
+                                        onClick={() => {
+                                            const email = encodeURIComponent(selectedResponse.responder);
+                                            router.push(`/ack/invite?record_id=${recordId}&email=${email}&action=grant`);
+                                        }}
+                                    >
+                                        Grant Access (Send Invite)
+                                    </button>
+                                </div>
+                            )}
+
+                            <div className="traction-foot micro">
+                                Verifiable via public registry using the Record ID and Signal Hash.
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-
-        </div >
-
+            )}
+        </div>
     );
 }

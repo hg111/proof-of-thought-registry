@@ -652,3 +652,24 @@
 ::-webkit-scrollbar-corner {
     background: transparent;
 }
+.traction-tag.mid {
+    border-color: rgba(200, 255, 128, 0.35);
+    color: rgba(200, 255, 128, 0.95);
+}
+
+/* Custom Scrollbar for Lists */
+.traction-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) rgba(0, 0, 0, 0.3);
+}
+
+.traction-scroll::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+}
+
+.traction-scroll::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    border: 2px solid rgba(0, 0, 0, 0.3); /* Padding effect */
+}

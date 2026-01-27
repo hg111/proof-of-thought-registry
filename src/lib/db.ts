@@ -23,8 +23,11 @@ type SubmissionRow = {
   registry_no: number | null;
   record_class: RecordClass;
   seal_object_key: string | null;
+  verify_slug?: string | null;
   is_public: number; // 0 or 1
   unit_label: string;
+  nda_enabled: number; // 0 or 1
+  nda_text: string | null;
 };
 
 
@@ -181,6 +184,28 @@ function ensure() {
     CREATE INDEX IF NOT EXISTS idx_traction_invites_record ON traction_invites(record_id);
   `);
 
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS access_tokens (
+        id TEXT PRIMARY KEY,
+        record_id TEXT NOT NULL,
+        token TEXT NOT NULL,
+        label TEXT,
+        expires_at INTEGER,
+        created_at INTEGER,
+        created_by TEXT,
+        is_active INTEGER DEFAULT 1
+    );
+
+    CREATE TABLE IF NOT EXISTS access_logs (
+        id TEXT PRIMARY KEY,
+        record_id TEXT NOT NULL,
+        token_id TEXT,
+        accessed_at INTEGER,
+        ip_address TEXT,
+        user_agent TEXT
+    );
+  `);
+
   // --- MIGRATION: fields on traction_invites ---
   const tiCols = db.prepare(`PRAGMA table_info(traction_invites)`).all() as Array<{ name: string }>;
   const tiColNames = new Set(tiCols.map(c => c.name));
@@ -188,9 +213,18 @@ function ensure() {
   if (!tiColNames.has("custom_summary")) db.exec(`ALTER TABLE traction_invites ADD COLUMN custom_summary TEXT; `);
   if (!tiColNames.has("recipient_name")) db.exec(`ALTER TABLE traction_invites ADD COLUMN recipient_name TEXT; `);
 
-  // --- MIGRATION: registry_no on submissions ---
+  // --- MIGRATION: access_tokens disclosure_type ---
+  const atCols = db.prepare(`PRAGMA table_info(access_tokens)`).all() as Array<{ name: string }>;
+  const atColNames = new Set(atCols.map(c => c.name));
+  if (!atColNames.has("disclosure_type")) db.exec(`ALTER TABLE access_tokens ADD COLUMN disclosure_type TEXT DEFAULT 'full'; `);
+  if (!atColNames.has("nda_accepted_at")) db.exec(`ALTER TABLE access_tokens ADD COLUMN nda_accepted_at INTEGER; `);
+
+  // --- MIGRATION: registry_no and NDA on submissions ---
   const cols = db.prepare(`PRAGMA table_info(submissions)`).all() as Array<{ name: string }>;
   const colNames = new Set(cols.map(c => c.name));
+
+  if (!colNames.has("nda_enabled")) db.exec(`ALTER TABLE submissions ADD COLUMN nda_enabled INTEGER DEFAULT 0; `);
+  if (!colNames.has("nda_text")) db.exec(`ALTER TABLE submissions ADD COLUMN nda_text TEXT; `);
 
   // --- MIGRATION: sequence on ledger_anchors ---
   const laCols = db.prepare(`PRAGMA table_info(ledger_anchors)`).all() as Array<{ name: string }>;
@@ -777,4 +811,100 @@ export function dbGetInvite(token: string) {
     is_used: number, created_at: string, expires_at: string | null,
     custom_title: string | null, custom_summary: string | null, recipient_name: string | null
   } | undefined;
+}
+
+export function dbGetInvitesForRecord(recordId: string) {
+  return getDb().prepare(`
+    SELECT * FROM traction_invites 
+    WHERE record_id = ? 
+    ORDER BY created_at DESC
+  `).all(recordId) as Array<{
+    token: string, record_id: string, creator_name: string, role_label: string,
+    is_used: number, created_at: string, recipient_name: string | null
+  }>;
+}
+
+// --- Access Tokens (Phase 11) ---
+
+import { randomBytes, randomUUID } from "crypto";
+
+export interface AccessToken {
+  id: string;
+  record_id: string;
+  token: string;
+  label: string;
+  expires_at: number | null;
+  is_active: number;
+  disclosure_type: string; // 'pitch' | 'summary' | 'full'
+}
+
+export function dbCreateAccessToken(recordId: string, label: string = "Standard Link", durationHours: number = 72, disclosureType: string = "full"): string {
+  const db = getDb();
+  const token = randomBytes(24).toString('hex');
+  const id = randomUUID();
+  const expiresAt = Date.now() + (durationHours * 60 * 60 * 1000);
+
+  db.prepare(`
+        INSERT INTO access_tokens (id, record_id, token, label, expires_at, created_at, disclosure_type)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(id, recordId, token, label, expiresAt, Date.now(), disclosureType);
+
+  return token;
+}
+
+export function dbVerifyAccessToken(token: string): { valid: boolean; recordId?: string; tokenId?: string; disclosureType?: string; ndaAcceptedAt?: number } {
+  const db = getDb();
+  const row = db.prepare(`
+        SELECT id, record_id, expires_at, is_active, disclosure_type, nda_accepted_at
+        FROM access_tokens 
+        WHERE token = ?
+    `).get(token) as { id: string, record_id: string, expires_at: number, is_active: number, disclosure_type: string, nda_accepted_at: number } | undefined;
+
+  if (!row) return { valid: false };
+  if (!row.is_active) return { valid: false };
+  if (row.expires_at && Date.now() > row.expires_at) return { valid: false };
+
+  return {
+    valid: true,
+    recordId: row.record_id,
+    tokenId: row.id,
+    disclosureType: row.disclosure_type || 'full',
+    ndaAcceptedAt: row.nda_accepted_at
+  };
+}
+
+export function dbAcceptNDA(token: string) {
+  getDb().prepare(`UPDATE access_tokens SET nda_accepted_at = ? WHERE token = ?`).run(Date.now(), token);
+}
+
+export function dbUpdateRecordNDA(recordId: string, enabled: boolean, text: string) {
+  getDb().prepare(`UPDATE submissions SET nda_enabled = ?, nda_text = ? WHERE id = ?`).run(enabled ? 1 : 0, text, recordId);
+}
+
+export function dbLogAccess(recordId: string, tokenId: string | null, ip: string, ua: string) {
+  const db = getDb();
+  db.prepare(`
+        INSERT INTO access_logs (id, record_id, token_id, accessed_at, ip_address, user_agent)
+        VALUES (?, ?, ?, ?, ?, ?)
+    `).run(randomUUID(), recordId, tokenId, Date.now(), ip, ua);
+}
+
+export function dbGetAccessLogs(recordId: string): any[] {
+  const db = getDb();
+  return db.prepare(`
+    SELECT al.*, at.label as token_label 
+    FROM access_logs al
+    LEFT JOIN access_tokens at ON al.token_id = at.id
+    WHERE al.record_id = ?
+    ORDER BY al.accessed_at DESC
+  `).all(recordId);
+}
+
+export function dbGetAccessTokens(recordId: string): any[] {
+  const db = getDb();
+  return db.prepare(`
+    SELECT * FROM access_tokens
+    WHERE record_id = ?
+    ORDER BY created_at DESC
+  `).all(recordId);
 }

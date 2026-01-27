@@ -1,0 +1,654 @@
+/* Scoped variables to prevent leaking to other pages */
+.traction-body {
+    --bg: #050608;
+    --panel: #111522;
+    --panel2: #0f1320;
+    --ink: #e9edf7;
+    --muted: #a6b0c5;
+    --line: #24304a;
+    --good: #52f2a8;
+    --warn: #ffd36a;
+    --bad: #ff6b6b;
+    --accent: #6aa6ff;
+    --shadow: 0 20px 60px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    --r: 16px;
+    font-synthesis-weight: none;
+}
+
+.traction-body[data-theme="light"] {
+    --bg: #f0f4f8;
+    --panel: #ffffff;
+    --panel2: #f7f9fc;
+    --ink: #10151d;
+    --muted: #64748b;
+    --line: #cbd5e1;
+    --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    /* Softer shadow */
+}
+
+.traction-body {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow-y: auto;
+    z-index: 50;
+    /* Ensure on top of layout container */
+    background:
+        radial-gradient(1200px 700px at 50% -10%, rgba(106, 166, 255, 0.18), transparent 55%),
+        radial-gradient(900px 500px at 10% 20%, rgba(82, 242, 168, 0.10), transparent 60%),
+        var(--bg);
+    color: var(--ink);
+    font: 14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+}
+
+.traction-wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 28px 18px 60px;
+}
+
+/* top */
+.traction-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+.traction-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.traction-mark {
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(106, 166, 255, 0.9), rgba(82, 242, 168, 0.75));
+    box-shadow: 0 10px 30px rgba(106, 166, 255, 0.12);
+}
+
+.traction-brand h1 {
+    font-size: 14px;
+    margin: 0;
+    letter-spacing: 0.2px;
+    font-weight: 650;
+}
+
+.traction-brand small {
+    display: block;
+    margin-top: 2px;
+    color: var(--muted);
+    font-weight: 500;
+}
+
+.traction-pillrow {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.traction-pill {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 8px 10px;
+    border-radius: 999px;
+    color: var(--muted);
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.traction-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--good);
+}
+
+.traction-dot.warn {
+    background: var(--warn);
+}
+
+/* cards */
+.traction-card {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.03));
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--r);
+    box-shadow: var(--shadow);
+}
+
+.traction-pad {
+    padding: 16px;
+}
+
+.traction-kicker {
+    color: var(--muted);
+    font-weight: 650;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    font-size: 11px;
+}
+
+.traction-title {
+    margin: 6px 0 8px;
+    font-size: 18px;
+    font-weight: 750;
+    letter-spacing: 0.2px;
+}
+
+.traction-sub {
+    margin: 0;
+    color: var(--muted);
+}
+
+.traction-sub.micro {
+    font-size: 12px;
+    opacity: 0.9;
+}
+
+.traction-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+}
+
+.traction-chip {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 8px 10px;
+    border-radius: 12px;
+    color: var(--muted);
+}
+
+.traction-chip b {
+    color: var(--ink);
+    font-weight: 650;
+}
+
+.traction-ctaRow {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+    align-items: center;
+}
+
+.traction-btn {
+    border-radius: 14px;
+    padding: 10px 12px;
+    font-weight: 650;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--ink);
+    cursor: pointer;
+}
+
+.traction-btn.primary {
+    background: linear-gradient(135deg, rgba(106, 166, 255, 0.9), rgba(106, 166, 255, 0.55));
+    border-color: rgba(106, 166, 255, 0.7);
+}
+
+.traction-btn.ghost {
+    background: transparent;
+}
+
+.traction-btn:active {
+    transform: translateY(1px);
+}
+
+/* metrics */
+.traction-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 14px;
+}
+
+@media (max-width: 820px) {
+    .traction-metrics {
+        grid-template-columns: 1fr;
+    }
+}
+
+.traction-mBox {
+    background: rgba(0, 0, 0, 0.22);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 12px;
+}
+
+.traction-mLbl {
+    color: var(--muted);
+    font-weight: 650;
+    font-size: 11px;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+}
+
+.traction-mVal {
+    margin-top: 6px;
+    font-size: 20px;
+    font-weight: 850;
+}
+
+.traction-mVal small {
+    font-weight: 750;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.traction-bar {
+    height: 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+    margin-top: 10px;
+}
+
+.traction-bar>i {
+    display: block;
+    height: 100%;
+    width: 50%;
+    background: linear-gradient(90deg, rgba(82, 242, 168, 0.95), rgba(106, 166, 255, 0.85));
+}
+
+.traction-hint {
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 10px;
+}
+
+/* layout */
+.traction-hero {
+    display: grid;
+    grid-template-columns: 1.25fr 0.75fr;
+    gap: 14px;
+    margin: 16px 0 18px;
+}
+
+@media (max-width: 900px) {
+    .traction-hero {
+        grid-template-columns: 1fr;
+    }
+}
+
+.traction-fullRow {
+    margin-top: 14px;
+}
+
+.traction-grid {
+    display: grid;
+    grid-template-columns: calc((100% - 14px) * 0.625) calc((100% - 14px) * 0.375) !important;
+    gap: 14px;
+    margin-top: 14px;
+    width: 100%;
+}
+
+.traction-grid>* {
+    width: 100%;
+}
+
+@media (max-width: 980px) {
+    .traction-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ruler */
+.traction-rulerWrap {
+    margin-top: 6px;
+}
+
+.traction-rulerTop {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.traction-rulerLine {
+    margin-top: 12px;
+    position: relative;
+    height: 120px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.18);
+    padding: 12px 12px 14px;
+    overflow: hidden;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+}
+
+.traction-rulerLine:active {
+    cursor: grabbing;
+}
+
+.traction-rulerTrack {
+    position: absolute;
+    left: 28px;
+    top: 0;
+    bottom: 0;
+    width: calc(100% - 28px);
+}
+
+/* major ticks (lane stacked) */
+.traction-tick {
+    position: absolute;
+    transform: translateX(-50%);
+    text-align: center;
+    width: 150px;
+    pointer-events: none;
+    top: 10px;
+}
+
+.traction-tick .stem {
+    width: 2px;
+    height: 16px;
+    background: rgba(255, 255, 255, 0.30);
+    margin: 0 auto;
+    border-radius: 2px;
+}
+
+.traction-tick .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    margin: 5px auto 0;
+    background: var(--accent);
+    box-shadow: 0 0 0 3px rgba(106, 166, 255, 0.10);
+}
+
+.traction-tick.ack .dot {
+    background: var(--good);
+    box-shadow: 0 0 0 3px rgba(82, 242, 168, 0.10);
+}
+
+.traction-tick.val .dot {
+    background: var(--warn);
+    box-shadow: 0 0 0 3px rgba(255, 211, 106, 0.10);
+}
+
+.traction-tick .type {
+    font-size: 11px;
+    font-weight: 800;
+    color: rgba(233, 237, 247, 0.92);
+    margin-top: 6px;
+    white-space: nowrap;
+}
+
+.traction-tick .lab {
+    margin-top: 3px;
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+}
+
+/* minor month ticks */
+.traction-minorTick {
+    position: absolute;
+    transform: translateX(-50%);
+    transform: translateX(-50%);
+    width: 18px;
+    text-align: center;
+    pointer-events: none;
+    top: 10px;
+}
+
+.traction-minorTick .mStem {
+    width: 1px;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.18);
+    margin: 0 auto;
+    border-radius: 1px;
+}
+
+.traction-minorTick .mLab {
+    margin-top: 8px;
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.20);
+    white-space: nowrap;
+}
+
+.traction-minorTick.q .mLab {
+    color: rgba(255, 255, 255, 0.32);
+}
+
+/* table */
+.traction-table {
+    width: 100%;
+    border-collapse: collapse;
+    overflow: hidden;
+    border-radius: 14px;
+}
+
+.traction-table th,
+.traction-table td {
+    padding: 12px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    vertical-align: top;
+    text-align: left;
+}
+
+.traction-table th {
+    color: var(--muted);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.4px;
+    background: rgba(0, 0, 0, 0.18);
+}
+
+.traction-table tr:hover td {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.traction-person {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.traction-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.traction-pname {
+    font-weight: 750;
+    margin: 0;
+}
+
+.traction-pmeta {
+    color: var(--muted);
+    margin-top: 2px;
+    font-size: 12px;
+}
+
+.traction-tagRow {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.traction-tag {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+    padding: 6px 8px;
+    color: var(--muted);
+    font-weight: 650;
+    font-size: 12px;
+}
+
+.traction-tag.good {
+    border-color: rgba(82, 242, 168, 0.35);
+    color: rgba(82, 242, 168, 0.95);
+}
+
+.traction-tag.warn {
+    border-color: rgba(255, 211, 106, 0.35);
+    color: rgba(255, 211, 106, 0.95);
+}
+
+/* sidebar */
+.traction-side .item {
+    padding: 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.18);
+}
+
+.traction-side .item+.item {
+    margin-top: 10px;
+}
+
+.traction-side h3 {
+    margin: 0 0 6px;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.traction-side p {
+    margin: 0;
+    color: var(--muted);
+}
+
+.traction-side code {
+    display: block;
+    margin-top: 8px;
+    padding: 10px;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.28);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #cfe0ff;
+    overflow: auto;
+}
+
+/* modal */
+.traction-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.62);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    z-index: 1000;
+}
+
+.traction-modal.open {
+    display: flex;
+}
+
+.traction-box {
+    max-width: 720px;
+    width: 100%;
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    background: linear-gradient(180deg, rgba(17, 21, 34, 0.98), rgba(12, 15, 25, 0.98));
+    box-shadow: var(--shadow);
+}
+
+.traction-hd {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 16px 16px 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.traction-hd h2 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 850;
+}
+
+.traction-x {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: var(--ink);
+    border-radius: 12px;
+    padding: 8px 10px;
+    cursor: pointer;
+}
+
+.traction-bd {
+    padding: 14px 16px 16px;
+}
+
+.traction-kv {
+    display: grid;
+    grid-template-columns: 170px 1fr;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.traction-kv:last-child {
+    border-bottom: 0;
+}
+
+.traction-kv .k {
+    color: var(--muted);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.4px;
+}
+
+.traction-kv .v {
+    font-weight: 650;
+}
+
+.traction-foot {
+    margin-top: 16px;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.traction-foot.micro {
+    font-size: 11px;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+    background: transparent;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.22);
+}
+
+::-webkit-scrollbar-corner {
+    background: transparent;
+}

@@ -9,8 +9,14 @@ export default function RadiantVerifierPage() {
     const [id, setId] = useState<string | null>(null);
 
     const [record, setRecord] = useState<any>(null);
+    const [isRevealed, setIsRevealed] = useState(false);
     const [signals, setSignals] = useState<any[]>([]);
     const [hasLoaded, setHasLoaded] = useState(false);
+
+    // NDA State
+    const [ndaRequired, setNdaRequired] = useState(false);
+    const [ndaAccepted, setNdaAccepted] = useState(false);
+    const [ndaLoading, setNdaLoading] = useState(false);
 
     // Radio Selection State (Mutually Exclusive)
     const [selectedTier, setSelectedTier] = useState<'pitch' | 'summary' | 'full'>('pitch');
@@ -29,9 +35,29 @@ export default function RadiantVerifierPage() {
     useEffect(() => {
         if (!id) return;
 
-        fetch(`/api/traction/record?record_id=${id}`)
+        // Check for access token in URL
+        const params = new URLSearchParams(window.location.search);
+        const token = params.get('access_token');
+        const url = `/api/traction/record?record_id=${id}` + (token ? `&access_token=${token}` : '');
+
+        fetch(url)
             .then(res => res.json())
             .then(data => {
+                console.log("[DEBUG] API Response:", data);
+
+                // NDA Logic
+                if (data.nda_required && !data.nda_accepted) {
+                    setNdaRequired(true);
+                } else {
+                    setNdaRequired(false);
+                }
+
+                if (data.revealed) {
+                    console.log("[DEBUG] Content Revealed! Setting State.");
+                    setIsRevealed(true);
+                }
+                else console.log("[DEBUG] Content Sealed (Blurred).");
+
                 if (data.record) {
                     setRecord(data.record);
                     return fetch(`/api/traction/signals?record_id=${data.record.id}`);
@@ -45,6 +71,32 @@ export default function RadiantVerifierPage() {
             .finally(() => setHasLoaded(true));
 
     }, [id]);
+
+    const handleAcceptNDA = async () => {
+        const params = new URLSearchParams(window.location.search);
+        const token = params.get('access_token');
+        if (!token) return;
+
+        setNdaLoading(true);
+        try {
+            const res = await fetch('/api/traction/accept-nda', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token })
+            });
+            if (res.ok) {
+                // Reload to fetch content
+                window.location.reload();
+            } else {
+                alert("Failed to accept NDA. Please try again.");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Error connecting to server.");
+        } finally {
+            setNdaLoading(false);
+        }
+    };
 
     if (!hasLoaded || !record) return <div className="radiant-body"><div style={{ opacity: 0.5 }}>Verifying...</div></div>;
 
@@ -106,16 +158,10 @@ export default function RadiantVerifierPage() {
                 <div className="radiant-title-col">
                     {(() => {
                         const originalTitle = record.title || "Untitled Record";
-                        // 1. Split into words (handling hyphens as separators too)
                         const allWords = originalTitle.replace(/-/g, ' ').split(/\s+/).filter(Boolean);
-
-                        // 2. Truncate logic (max 16 words for poster aesthetic)
                         const MAX_WORDS = 16;
                         const isTruncated = allWords.length > MAX_WORDS;
                         const displayWords = isTruncated ? [...allWords.slice(0, MAX_WORDS), "..."] : allWords;
-
-                        // 3. Dynamic Font Size logic
-                        // Base 48px. Scale down if many words.
                         let fontSize = '48px';
                         const count = displayWords.length;
                         if (count > 12) fontSize = '32px';
@@ -127,57 +173,143 @@ export default function RadiantVerifierPage() {
                     })()}
                 </div>
 
-                <div className="radiant-box radiant-box-proof">
-                    <div className="radiant-proof-header" style={{ position: 'relative' }}>
-                        <div style={{
-                            position: 'absolute',
-                            top: '32px',
-                            right: '32px',
-                            fontSize: '13px',
-                            fontWeight: 500,
-                            color: 'rgba(255,255,255,0.5)',
-                            letterSpacing: '0.5px'
-                        }}>
-                            PROOF OF THOUGHT™
-                        </div>
-                        <div className="radiant-kicker">Genesis Record</div>
-                        <h2 className="radiant-h2">Cryptographic Proof</h2>
-                    </div>
-                    <div className="radiant-content">
-                        {/* Compact Layout */}
-                        <div style={{ display: 'grid', gap: '16px' }}>
-                            <div>
-                                <div className="radiant-field-lbl">Registry No</div>
-                                <div className="radiant-field-val">{record.registry_no ? `R-${String(record.registry_no).padStart(16, '0')}` : "R-..."}</div>
-                            </div>
-                            <div>
-                                <div className="radiant-field-lbl">Timestamp (UTC)</div>
-                                <div className="radiant-field-val">
-                                    {new Date(record.created_at).toISOString().replace('T', ' ').split('.')[0]} UTC
+                {/* 2. PROOF PANEL / CONTENT */}
+                {(() => {
+                    // Logic: 
+                    // 1. If NDA Required -> Show NDA Gate
+                    // 2. If Revealed -> Show Content
+                    // 3. Else -> Show Sealed Cert
+
+                    if (ndaRequired) {
+                        return (
+                            <div className="radiant-box radiant-box-proof" style={{ border: '1px solid #eab308' }}>
+                                <div className="radiant-proof-header" style={{ borderColor: '#eab308' }}>
+                                    <div className="radiant-kicker" style={{ color: '#fde047' }}>Confidentiality Agreement</div>
+                                    <h2 className="radiant-h2">NDA Required</h2>
+                                </div>
+                                <div className="radiant-content">
+                                    <div style={{ marginBottom: '16px', fontSize: '13px', opacity: 0.8 }}>
+                                        To view this full disclosure, you must agree to the following Non-Disclosure Agreement:
+                                    </div>
+                                    <div style={{
+                                        background: 'rgba(0,0,0,0.3)',
+                                        padding: '16px',
+                                        borderRadius: '8px',
+                                        fontSize: '12px',
+                                        maxHeight: '200px',
+                                        overflowY: 'auto',
+                                        marginBottom: '24px',
+                                        border: '1px solid rgba(255,255,255,0.1)',
+                                        whiteSpace: 'pre-wrap',
+                                        fontFamily: 'monospace'
+                                    }}>
+                                        {record.nda_text || "This information is confidential. By proceeding, you agree not to share or reproduce this content without permission."}
+                                    </div>
+                                    <button
+                                        className="radiant-btn"
+                                        style={{ width: '100%', justifyContent: 'center', background: '#eab308', color: '#000', fontWeight: 600 }}
+                                        onClick={handleAcceptNDA}
+                                        disabled={ndaLoading}
+                                    >
+                                        {ndaLoading ? "Accepting..." : "I Agree & Enter"}
+                                    </button>
                                 </div>
                             </div>
-                            <div>
-                                <div className="radiant-field-lbl">Content Hash (SHA-256)</div>
-                                <div className="radiant-field-val">{record.content_hash}</div>
+                        );
+                    } else if (isRevealed || record.canonical_text) {
+                        return (
+                            <div className="radiant-box radiant-box-proof" style={{ border: '1px solid #22c55e' }}>
+                                <div className="radiant-proof-header" style={{ borderColor: '#22c55e' }}>
+                                    <div style={{
+                                        position: 'absolute',
+                                        top: '32px',
+                                        right: '32px',
+                                        fontSize: '13px',
+                                        color: '#22c55e',
+                                        fontWeight: 600,
+                                        letterSpacing: '0.5px'
+                                    }}>
+                                        DISCLOSURE ACTIVE
+                                    </div>
+                                    <div className="radiant-kicker" style={{ color: '#4ade80' }}>Authenticated Access</div>
+                                    <h2 className="radiant-h2">Full Content Revealed</h2>
+                                </div>
+                                <div className="radiant-content" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                                    <div style={{
+                                        flex: 1,
+                                        overflowY: 'auto',
+                                        minHeight: 0,
+                                        whiteSpace: 'pre-wrap',
+                                        fontFamily: 'monospace',
+                                        fontSize: '13px',
+                                        lineHeight: '1.6',
+                                        color: '#fff',
+                                        paddingRight: '12px',
+                                        paddingBottom: '20px'
+                                    }}>
+                                        {record.canonical_text}
+                                    </div>
+                                    <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.1)', fontSize: '11px', opacity: 0.5 }}>
+                                        Audit Log: This view has been cryptographically recorded.
+                                    </div>
+                                </div>
                             </div>
-                        </div>
+                        );
+                    } else {
+                        // Default Sealed View
+                        return (
+                            <div className="radiant-box radiant-box-proof">
+                                <div className="radiant-proof-header" style={{ position: 'relative' }}>
+                                    <div style={{
+                                        position: 'absolute',
+                                        top: '32px',
+                                        right: '32px',
+                                        fontSize: '13px',
+                                        fontWeight: 500,
+                                        color: 'rgba(255,255,255,0.5)',
+                                        letterSpacing: '0.5px'
+                                    }}>
+                                        PROOF OF THOUGHT™
+                                    </div>
+                                    <div className="radiant-kicker">Genesis Record</div>
+                                    <h2 className="radiant-h2">Cryptographic Proof</h2>
+                                </div>
+                                <div className="radiant-content">
+                                    <div style={{ display: 'grid', gap: '16px' }}>
+                                        <div>
+                                            <div className="radiant-field-lbl">Registry No</div>
+                                            <div className="radiant-field-val">{record.registry_no ? `R-${String(record.registry_no).padStart(16, '0')}` : "R-..."}</div>
+                                        </div>
+                                        <div>
+                                            <div className="radiant-field-lbl">Timestamp (UTC)</div>
+                                            <div className="radiant-field-val">
+                                                {new Date(record.created_at).toISOString().replace('T', ' ').split('.')[0]} UTC
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div className="radiant-field-lbl">Content Hash (SHA-256)</div>
+                                            <div className="radiant-field-val">{record.content_hash}</div>
+                                        </div>
+                                    </div>
 
-                        {/* BLURRED VAULT VISUALIZATION */}
-                        <div className="radiant-blurred-block" style={{ marginTop: '24px' }}>
-                            <div className="radiant-lock-overlay">
-                                <span>🔒</span> Sealed Content (Encrypted)
+                                    <div className="radiant-blurred-block" style={{ marginTop: '24px' }}>
+                                        <div className="radiant-lock-overlay">
+                                            <span>🔒</span> Sealed Content (Encrypted)
+                                        </div>
+                                        <div className="radiant-blur-line" style={{ width: '90%' }}></div>
+                                        <div className="radiant-blur-line" style={{ width: '95%' }}></div>
+                                        <div className="radiant-blur-line" style={{ width: '80%' }}></div>
+                                        <div className="radiant-blur-line" style={{ width: '85%' }}></div>
+                                    </div>
+
+                                    <div style={{ marginTop: 'auto', opacity: 0.5, fontSize: '11px', lineHeight: '1.5' }}>
+                                        This certificate proves that the information existed in this form at the timestamped date.
+                                    </div>
+                                </div>
                             </div>
-                            <div className="radiant-blur-line" style={{ width: '90%' }}></div>
-                            <div className="radiant-blur-line" style={{ width: '95%' }}></div>
-                            <div className="radiant-blur-line" style={{ width: '80%' }}></div>
-                            <div className="radiant-blur-line" style={{ width: '85%' }}></div>
-                        </div>
-
-                        <div style={{ marginTop: 'auto', opacity: 0.5, fontSize: '11px', lineHeight: '1.5' }}>
-                            This certificate proves that the information existed in this form at the timestamped date.
-                        </div>
-                    </div>
-                </div>
+                        );
+                    }
+                })()}
 
                 {/* 3. TRACTION PANEL */}
                 <div className="radiant-box radiant-box-traction">
@@ -208,94 +340,119 @@ export default function RadiantVerifierPage() {
                         <div className="radiant-val-lbl">Current Valuation</div>
                         <div className="radiant-big-val">{realValuation}</div>
 
-                        {/* TIERED REQUEST OPTIONS (Radio) */}
-                        <div className="radiant-tier-list">
-                            {/* Removed Header "Request Disclosure" to avoid redundancy */}
+                        {/* Panel CTA Login: If NDA Required, hide request form (because they already have a token, just locked) */}
+                        {/* Actually, if they are here with a token, they can accept NDA. */}
+                        {/* If they are here WITHOUT a token (public), they see Request Form. */}
 
-                            <div className="radiant-tier-item" onClick={() => setSelectedTier('pitch')}>
-                                <div className={`radiant-checkbox round ${selectedTier === 'pitch' ? 'checked' : ''}`}>
-                                    {selectedTier === 'pitch' && <div className="radiant-dot-inner"></div>}
-                                </div>
-                                <span>{tierLabels.pitch}</span>
+                        {(isRevealed || record.canonical_text || ndaRequired) ? ( // ndaRequired means they have token
+                            <div style={{ marginTop: '24px', textAlign: 'center' }}>
+                                {ndaRequired ? (
+                                    <div style={{ marginBottom: '16px', padding: '12px', background: 'rgba(234, 179, 8, 0.1)', border: '1px solid rgba(234, 179, 8, 0.3)', borderRadius: '8px' }}>
+                                        <div style={{ fontSize: '14px', fontWeight: 600, color: '#fde047', marginBottom: '4px' }}>⚠ Action Required</div>
+                                        <div style={{ fontSize: '12px', opacity: 0.7 }}>Accept NDA to view.</div>
+                                    </div>
+                                ) : (
+                                    <div style={{ marginBottom: '16px', padding: '12px', background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.3)', borderRadius: '8px' }}>
+                                        <div style={{ fontSize: '14px', fontWeight: 600, color: '#4ade80', marginBottom: '4px' }}>✓ Verified Viewer</div>
+                                        <div style={{ fontSize: '12px', opacity: 0.7 }}>You have full access to this record.</div>
+                                    </div>
+                                )}
+
+                                <button
+                                    className="radiant-btn"
+                                    onClick={() => window.location.href = `mailto:?subject=Regarding: ${record.title}&body=I have reviewed your disclosed Proof-of-Thought.`}
+                                >
+                                    Contact Creator
+                                </button>
                             </div>
+                        ) : (
+                            <>
+                                <div className="radiant-tier-list">
+                                    <div className="radiant-tier-item" onClick={() => setSelectedTier('pitch')}>
+                                        <div className={`radiant-checkbox round ${selectedTier === 'pitch' ? 'checked' : ''}`}>
+                                            {selectedTier === 'pitch' && <div className="radiant-dot-inner"></div>}
+                                        </div>
+                                        <span>{tierLabels.pitch}</span>
+                                    </div>
 
-                            <div className="radiant-tier-item" onClick={() => setSelectedTier('summary')}>
-                                <div className={`radiant-checkbox round ${selectedTier === 'summary' ? 'checked' : ''}`}>
-                                    {selectedTier === 'summary' && <div className="radiant-dot-inner"></div>}
-                                </div>
-                                <span>{tierLabels.summary}</span>
-                            </div>
+                                    <div className="radiant-tier-item" onClick={() => setSelectedTier('summary')}>
+                                        <div className={`radiant-checkbox round ${selectedTier === 'summary' ? 'checked' : ''}`}>
+                                            {selectedTier === 'summary' && <div className="radiant-dot-inner"></div>}
+                                        </div>
+                                        <span>{tierLabels.summary}</span>
+                                    </div>
 
-                            <div className="radiant-tier-item" onClick={() => setSelectedTier('full')}>
-                                <div className={`radiant-checkbox round ${selectedTier === 'full' ? 'checked' : ''}`}>
-                                    {selectedTier === 'full' && <div className="radiant-dot-inner"></div>}
+                                    <div className="radiant-tier-item" onClick={() => setSelectedTier('full')}>
+                                        <div className={`radiant-checkbox round ${selectedTier === 'full' ? 'checked' : ''}`}>
+                                            {selectedTier === 'full' && <div className="radiant-dot-inner"></div>}
+                                        </div>
+                                        <span className={selectedTier === 'full' ? 'radiant-highlight-text' : ''}>{tierLabels.full}</span>
+                                    </div>
                                 </div>
-                                <span className={selectedTier === 'full' ? 'radiant-highlight-text' : ''}>{tierLabels.full}</span>
-                            </div>
-                        </div>
 
-                        {/* Request Form */}
-                        <div style={{ marginTop: '12px' }}>
-                            {!requestSent ? (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                    <input
-                                        type="email"
-                                        placeholder="Enter your email to request access..."
-                                        className="radiant-input"
-                                        style={{
-                                            background: 'rgba(255,255,255,0.05)',
-                                            border: '1px solid rgba(255,255,255,0.1)',
-                                            color: '#fff',
-                                            padding: '6px 10px',
-                                            borderRadius: '6px',
-                                            fontSize: '12px'
-                                        }}
-                                        value={requesterEmail}
-                                        onChange={e => setRequesterEmail(e.target.value)}
-                                    />
-                                    <button
-                                        className="radiant-btn"
-                                        disabled={requestLoading}
-                                        onClick={async () => {
-                                            if (!requesterEmail.includes('@')) {
-                                                alert("Please enter a valid email.");
-                                                return;
-                                            }
-                                            setRequestLoading(true);
-                                            try {
-                                                const res = await fetch('/api/traction/request-disclosure', {
-                                                    method: 'POST',
-                                                    headers: { 'Content-Type': 'application/json' },
-                                                    body: JSON.stringify({
-                                                        record_id: record.id,
-                                                        requester_email: requesterEmail,
-                                                        request_type: tierLabels[selectedTier]
-                                                    })
-                                                });
-                                                if (res.ok) {
-                                                    setRequestSent(true);
-                                                } else {
-                                                    alert("Use default mail client? API failed.");
-                                                    window.location.href = `mailto:?subject=Request Access&body=Requesting ${tierLabels[selectedTier]}`;
-                                                }
-                                            } catch (e) {
-                                                console.error(e);
-                                                alert("Error sending request.");
-                                            } finally {
-                                                setRequestLoading(false);
-                                            }
-                                        }}
-                                    >
-                                        {requestLoading ? 'Sending...' : 'Request Disclosure'}
-                                    </button>
+                                <div style={{ marginTop: '12px' }}>
+                                    {!requestSent ? (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                            <input
+                                                type="email"
+                                                placeholder="Enter your email to request access..."
+                                                className="radiant-input"
+                                                style={{
+                                                    background: 'rgba(255,255,255,0.05)',
+                                                    border: '1px solid rgba(255,255,255,0.1)',
+                                                    color: '#fff',
+                                                    padding: '6px 10px',
+                                                    borderRadius: '6px',
+                                                    fontSize: '12px'
+                                                }}
+                                                value={requesterEmail}
+                                                onChange={e => setRequesterEmail(e.target.value)}
+                                            />
+                                            <button
+                                                className="radiant-btn"
+                                                disabled={requestLoading}
+                                                onClick={async () => {
+                                                    if (!requesterEmail.includes('@')) {
+                                                        alert("Please enter a valid email.");
+                                                        return;
+                                                    }
+                                                    setRequestLoading(true);
+                                                    try {
+                                                        const res = await fetch('/api/traction/request-disclosure', {
+                                                            method: 'POST',
+                                                            headers: { 'Content-Type': 'application/json' },
+                                                            body: JSON.stringify({
+                                                                record_id: record.id,
+                                                                requester_email: requesterEmail,
+                                                                request_type: tierLabels[selectedTier]
+                                                            })
+                                                        });
+                                                        if (res.ok) {
+                                                            setRequestSent(true);
+                                                        } else {
+                                                            alert("Use default mail client? API failed.");
+                                                            window.location.href = `mailto:?subject=Request Access&body=Requesting ${tierLabels[selectedTier]}`;
+                                                        }
+                                                    } catch (e) {
+                                                        console.error(e);
+                                                        alert("Error sending request.");
+                                                    } finally {
+                                                        setRequestLoading(false);
+                                                    }
+                                                }}
+                                            >
+                                                {requestLoading ? 'Sending...' : 'Request Disclosure'}
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="radiant-success-msg" style={{ padding: '15px', background: 'rgba(50, 205, 50, 0.1)', border: '1px solid rgba(50, 205, 50, 0.3)', borderRadius: '8px', textAlign: 'center' }}>
+                                            <div style={{ fontSize: '18px', marginBottom: '4px' }}>✓ Request Sent</div>
+                                            <div style={{ fontSize: '13px', opacity: 0.8 }}>The owner has been notified. Check your email ({requesterEmail}) for an invite.</div>
+                                        </div>
+                                    )}
                                 </div>
-                            ) : (
-                                <div className="radiant-success-msg" style={{ padding: '15px', background: 'rgba(50, 205, 50, 0.1)', border: '1px solid rgba(50, 205, 50, 0.3)', borderRadius: '8px', textAlign: 'center' }}>
-                                    <div style={{ fontSize: '18px', marginBottom: '4px' }}>✓ Request Sent</div>
-                                    <div style={{ fontSize: '13px', opacity: 0.8 }}>The owner has been notified. Check your email ({requesterEmail}) for an invite.</div>
-                                </div>
-                            )}
-                        </div>
+                            </>
+                        )}
                     </div>
                 </div>
 

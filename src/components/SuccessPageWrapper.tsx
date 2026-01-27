@@ -16,14 +16,33 @@ export default function SuccessPageWrapper({ children }: { children: React.React
     // If param is present, start with animation overlay.
     // Once complete, show children.
 
-    // Cleanup URL to prevent replay on refresh/back
-    useEffect(() => {
-        if (shouldAnimate) {
+    // Safe URL cleanup function
+    const cleanupUrl = () => {
+        if (typeof window !== "undefined") {
             const url = new URL(window.location.href);
-            url.searchParams.delete("animate");
-            window.history.replaceState({}, "", url.toString());
+            if (url.searchParams.has("animate")) {
+                url.searchParams.delete("animate");
+                window.history.replaceState({}, "", url.toString());
+            }
         }
-    }, [shouldAnimate]);
+    };
+
+    // Failsafe: Force complete after 4 seconds to prevent lockup
+    useEffect(() => {
+        if (shouldAnimate && !animationComplete) {
+            const timer = setTimeout(() => {
+                setAnimationComplete(true);
+                cleanupUrl();
+            }, 4000);
+            return () => clearTimeout(timer);
+        }
+    }, [shouldAnimate, animationComplete]);
+
+    // Handle normal completion
+    const handleComplete = () => {
+        setAnimationComplete(true);
+        cleanupUrl();
+    };
 
     // Actually, we want to show children underneath? 
     // The SealingAnimation has a background overlay.
@@ -34,11 +53,8 @@ export default function SuccessPageWrapper({ children }: { children: React.React
     if (!animationComplete) {
         return (
             <>
-                <SealingAnimation onComplete={() => setAnimationComplete(true)} />
-                {/* Hide content while animating? Optional. */}
-                <div style={{ opacity: 0, height: 0, overflow: "hidden" }}>
-                    {children}
-                </div>
+                <SealingAnimation onComplete={handleComplete} />
+                {children}
             </>
         );
     }

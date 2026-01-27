@@ -22,10 +22,32 @@
 .radiant-layout-row {
     display: flex;
     align-items: stretch;
+    align-items: stretch;
     height: 480px;
+    /* Extended height for 500px content */
     gap: 40px;
     min-width: 900px;
     margin: auto;
+}
+
+/* CUSTOM SCROLLBAR */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #475569;
 }
 
 /* 1. SIDE TITLE (Vertical) */
