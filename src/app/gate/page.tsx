@@ -47,6 +47,17 @@ export default function GatePage({
           Unlock
         </button>
       </form>
+
+      <div style={{ marginTop: 40, paddingTop: 24, borderTop: '1px solid #eee', fontSize: 13, lineHeight: 1.6, opacity: 0.7, color: '#666' }}>
+        <p style={{ fontWeight: 600, marginBottom: 8 }}>Proof of Thought is currently in private beta.</p>
+        <p>
+          Access is limited and granted selectively to creators, researchers, and partners exploring provenance, custody, and controlled disclosure.
+        </p>
+        <p style={{ marginTop: 12 }}>
+          Contact us below to request an invitation:<br />
+          <a href="mailto:team.proofofthought@gmail.com" style={{ color: 'inherit', textDecoration: 'underline' }}>team.proofofthought@gmail.com</a>
+        </p>
+      </div>
     </main>
   );
 }
