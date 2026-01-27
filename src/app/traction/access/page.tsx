@@ -57,6 +57,28 @@ export default function TractionAccessPage() {
             .catch(err => console.error("Failed to load record", err));
 
         fetchAccessData();
+
+        // Polling for live updates (e.g. NDA signatures)
+        const pollInterval = setInterval(() => {
+            fetchAccessData();
+        }, 5000);
+
+        // Pre-fill "Grant To"
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            const grantTo = params.get('grant_to');
+            if (grantTo) {
+                setShowCreate(true);
+                setCreateLabel(`Specific Grant: ${grantTo}`);
+                // Could ideally parse the email out or use it directly if we had an email field
+                // For now, we append it to the label or similar context
+                // Or better, if we have a recipient field, fill it. 
+                // Since this form is "Label" based, we'll put it there.
+                setCreateLabel(grantTo);
+            }
+        }
+
+        return () => clearInterval(pollInterval);
     }, [recordId, fetchAccessData]);
 
     useEffect(() => {

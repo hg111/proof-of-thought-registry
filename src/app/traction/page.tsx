@@ -493,8 +493,8 @@ export default function TractionReceiptPage() {
                                                     if (s.type === 'ack_value') {
                                                         typeLabel = 'Valuation';
                                                         typeClass = 'warn';
-                                                    } else if (s.type === 'request_access') {
-                                                        typeLabel = 'Access Request';
+                                                    } else if (s.type === 'request_access' || s.type === 'request_more') {
+                                                        typeLabel = 'Disclosure Request';
                                                         typeClass = 'neutral'; // Or a specific color
                                                     }
 
@@ -507,7 +507,7 @@ export default function TractionReceiptPage() {
                                                             rawType: s.type, // Pass raw type for button logic
                                                             date: new Date(s.created_at).toLocaleString(),
                                                             valuation: s.type === 'ack_value' ? (s.val_exact || s.val_bucket) : null,
-                                                            note: s.note || (s.type === 'ack_value' ? (s.val_exact || s.val_bucket) : "No comment"),
+                                                            note: s.note || (s.type === 'request_more' || s.type === 'request_access' ? 'Disclosure Request initiated' : (s.type === 'ack_value' ? (s.val_exact || s.val_bucket) : "No comment")),
                                                             hash: "0x" + s.id.substring(0, 8) + "...",
                                                             sigLevel: "Verified"
                                                         })}>
@@ -644,7 +644,7 @@ export default function TractionReceiptPage() {
                             </div>
 
                             {/* Grant Access Action */}
-                            {selectedResponse.rawType === 'request_access' && (
+                            {(selectedResponse.rawType === 'request_access' || selectedResponse.rawType === 'request_more') && (
                                 <div style={{ marginTop: '20px', padding: '16px', background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '8px' }}>
                                     <div style={{ fontSize: '14px', marginBottom: '10px', fontWeight: 600 }}>Action Required</div>
                                     <p style={{ fontSize: '13px', opacity: 0.8, marginBottom: '12px' }}>
@@ -655,10 +655,10 @@ export default function TractionReceiptPage() {
                                         style={{ width: '100%' }}
                                         onClick={() => {
                                             const email = encodeURIComponent(selectedResponse.responder);
-                                            router.push(`/ack/invite?record_id=${recordId}&email=${email}&action=grant`);
+                                            router.push(`/traction/access?record_id=${recordId}&grant_to=${email}`);
                                         }}
                                     >
-                                        Grant Access (Send Invite)
+                                        Grant Access (Open Deal Room)
                                     </button>
                                 </div>
                             )}
