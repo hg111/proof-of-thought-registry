@@ -53,6 +53,12 @@ export async function POST(req: NextRequest) {
             },
         });
 
+        // Determine Base URL (fix for 0.0.0.0 in Docker/Render)
+        const baseUrl = process.env.APP_BASE_URL ||
+            (process.env.NODE_ENV === 'production' ? 'https://www.proof-of-thought.com' : new URL(req.url).origin);
+
+        const link = `${baseUrl}/traction/access?record_id=${record.id}`;
+
         const subject = `Access Request: "${record.title || 'Untitled'}"`;
         const text = `You have a new access request for your Proof-of-Thought record.
 
@@ -63,13 +69,13 @@ Requester: ${requester_email}
 Requested Tier: ${request_type}
 
 To grant access, click this direct link to open your **Deal Room**:
-${new URL(req.url).origin}/traction/access?record_id=${record.id}
+${link}
 
 1. Go to "Create Access Link"
 2. Select "${request_type}" disclosure
 3. Click "Generate Secure Link"
 
-(This is an automated notification.)`;
+            (This is an automated notification.)`;
 
         await transporter.sendMail({
             from: process.env.EMAIL_FROM || '"Proof-of-Thought" <no-reply@proofofthought.io>',

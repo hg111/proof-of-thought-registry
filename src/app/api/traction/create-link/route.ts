@@ -18,8 +18,12 @@ export async function POST(req: NextRequest) {
         }
 
         const token = dbCreateAccessToken(record_id, label || "Anonymous", duration_hours || 72, disclosure_type || "full");
-        const origin = new URL(req.url).origin;
-        const link = `${origin}/v/${record.verify_slug || record.id}?access_token=${token}`;
+
+        // Determine Base URL (fix for 0.0.0.0 in Docker/Render)
+        const baseUrl = process.env.APP_BASE_URL ||
+            (process.env.NODE_ENV === 'production' ? 'https://www.proof-of-thought.com' : new URL(req.url).origin);
+
+        const link = `${baseUrl}/v/${record.verify_slug || record.id}?access_token=${token}`;
 
         return NextResponse.json({ success: true, token, link });
 

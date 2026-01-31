@@ -40,8 +40,11 @@ export async function POST(req: NextRequest) {
             recipient_name
         );
 
-        // Return the operational link
-        const inviteLink = `${new URL(req.url).origin}/ack/recipient?t=${token}`;
+        // Determine Base URL (fix for 0.0.0.0 in Docker/Render)
+        const baseUrl = process.env.APP_BASE_URL ||
+            (process.env.NODE_ENV === 'production' ? 'https://www.proof-of-thought.com' : new URL(req.url).origin);
+
+        const inviteLink = `${baseUrl}/ack/recipient?t=${token}`;
 
         // Send Email if requested
         if (recipient_email) {
