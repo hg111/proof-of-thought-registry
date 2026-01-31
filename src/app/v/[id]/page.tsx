@@ -216,10 +216,23 @@ export default function RadiantVerifierPage() {
                                 </div>
                             </div>
                         );
-                    } else if (isRevealed || record.canonical_text) {
-                        return (
-                            <div className="radiant-box radiant-box-proof" style={{ border: '1px solid #22c55e' }}>
-                                <div className="radiant-proof-header" style={{ borderColor: '#22c55e' }}>
+                    }
+
+                    // REVEAL LOGIC
+                    // We might show Pitch/Summary even if "Full" is sealed.
+                    const showPitch = !!record.pitch_text;
+                    const showSummary = !!record.summary_text; // TODO: Should this check token scope? 
+                    // For now, if you are past NDA, you see Summary if it exists.
+                    // Actually, if 'isRevealed' is FALSE, it means we don't have FULL access.
+                    // But we might have SUMMARY access.
+
+                    // Since 'isRevealed' (Full Content) comes from backend only if authorized,
+                    // we can rely on that for the "Sealed/Unsealed" Proof State.
+
+                    return (
+                        <div className={`radiant-box radiant-box-proof ${isRevealed ? 'unsealed' : ''}`} style={{ border: isRevealed ? '1px solid #22c55e' : '1px solid rgba(255,255,255,0.1)' }}>
+                            <div className="radiant-proof-header" style={{ borderColor: isRevealed ? '#22c55e' : 'rgba(255,255,255,0.1)', position: 'relative' }}>
+                                {isRevealed && (
                                     <div style={{
                                         position: 'absolute',
                                         top: '32px',
@@ -231,35 +244,8 @@ export default function RadiantVerifierPage() {
                                     }}>
                                         DISCLOSURE ACTIVE
                                     </div>
-                                    <div className="radiant-kicker" style={{ color: '#4ade80' }}>Authenticated Access</div>
-                                    <h2 className="radiant-h2">Full Content Revealed</h2>
-                                </div>
-                                <div className="radiant-content" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                                    <div style={{
-                                        flex: 1,
-                                        overflowY: 'auto',
-                                        minHeight: 0,
-                                        whiteSpace: 'pre-wrap',
-                                        fontFamily: 'monospace',
-                                        fontSize: '13px',
-                                        lineHeight: '1.6',
-                                        color: '#fff',
-                                        paddingRight: '12px',
-                                        paddingBottom: '20px'
-                                    }}>
-                                        {record.canonical_text}
-                                    </div>
-                                    <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.1)', fontSize: '11px', opacity: 0.5 }}>
-                                        Audit Log: This view has been cryptographically recorded.
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    } else {
-                        // Default Sealed View
-                        return (
-                            <div className="radiant-box radiant-box-proof">
-                                <div className="radiant-proof-header" style={{ position: 'relative' }}>
+                                )}
+                                {!isRevealed && (
                                     <div style={{
                                         position: 'absolute',
                                         top: '32px',
@@ -271,44 +257,107 @@ export default function RadiantVerifierPage() {
                                     }}>
                                         PROOF OF THOUGHT™
                                     </div>
-                                    <div className="radiant-kicker">Genesis Record</div>
-                                    <h2 className="radiant-h2">Cryptographic Proof</h2>
+                                )}
+                                <div className="radiant-kicker" style={{ color: isRevealed ? '#4ade80' : '#94a3b8' }}>
+                                    {isRevealed ? "Authenticated Access" : "Genesis Record"}
                                 </div>
-                                <div className="radiant-content">
-                                    <div style={{ display: 'grid', gap: '16px' }}>
-                                        <div>
-                                            <div className="radiant-field-lbl">Registry No</div>
-                                            <div className="radiant-field-val">{record.registry_no ? `R-${String(record.registry_no).padStart(16, '0')}` : "R-..."}</div>
+                                <h2 className="radiant-h2">
+                                    {isRevealed ? "Full Content Revealed" : "Cryptographic Proof"}
+                                </h2>
+                            </div>
+
+                            <div className="radiant-content" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+
+                                {/* 1. MUTABLE PACKAGING (Pitch/Summary) */}
+                                {(showPitch || showSummary) && (
+                                    <div style={{ paddingBottom: '24px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                                        {showPitch && (
+                                            <div style={{ marginBottom: '20px' }}>
+                                                <div className="radiant-field-lbl" style={{ color: '#60a5fa', marginBottom: '8px' }}>ELEVATOR PITCH</div>
+                                                <div style={{ fontSize: '16px', lineHeight: '1.5', fontWeight: 400, color: '#fff' }}>
+                                                    {record.pitch_text}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {showSummary && (
+                                            <div>
+                                                <div className="radiant-field-lbl" style={{ color: '#fde047', marginBottom: '8px' }}>EXECUTIVE SUMMARY</div>
+                                                <div style={{
+                                                    fontSize: '14px',
+                                                    lineHeight: '1.6',
+                                                    color: 'rgba(255,255,255,0.9)',
+                                                    whiteSpace: 'pre-wrap',
+                                                    fontFamily: 'monospace',
+                                                    background: 'rgba(255,255,255,0.03)',
+                                                    padding: '16px',
+                                                    borderRadius: '6px'
+                                                }}>
+                                                    {record.summary_text}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* 2. IMMUTABLE PROOF (Full/Sealed) */}
+                                {isRevealed ? (
+                                    <div style={{
+                                        flex: 1,
+                                        overflowY: 'auto',
+                                        minHeight: '200px', // Ensure it has presence
+                                        whiteSpace: 'pre-wrap',
+                                        fontFamily: 'monospace',
+                                        fontSize: '13px',
+                                        lineHeight: '1.6',
+                                        color: '#fff',
+                                        paddingRight: '12px',
+                                        paddingBottom: '20px'
+                                    }}>
+                                        <div className="radiant-field-lbl" style={{ color: '#22c55e', marginBottom: '12px' }}>CANONICAL PROOF (IMMUTABLE)</div>
+                                        {record.canonical_text}
+                                        <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.1)', fontSize: '11px', opacity: 0.5 }}>
+                                            Audit Log: This view has been cryptographically recorded.
                                         </div>
-                                        <div>
-                                            <div className="radiant-field-lbl">Timestamp (UTC)</div>
-                                            <div className="radiant-field-val">
-                                                {new Date(record.created_at).toISOString().replace('T', ' ').split('.')[0]} UTC
+                                    </div>
+                                ) : (
+                                    // SEALED VIEW
+                                    <div>
+                                        <div style={{ display: 'grid', gap: '16px', marginBottom: '24px' }}>
+                                            <div>
+                                                <div className="radiant-field-lbl">Registry No</div>
+                                                <div className="radiant-field-val">{record.registry_no ? `R-${String(record.registry_no).padStart(16, '0')}` : "R-..."}</div>
+                                            </div>
+                                            <div>
+                                                <div className="radiant-field-lbl">Timestamp (UTC)</div>
+                                                <div className="radiant-field-val">
+                                                    {new Date(record.created_at).toISOString().replace('T', ' ').split('.')[0]} UTC
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div className="radiant-field-lbl">Content Hash (SHA-256)</div>
+                                                <div className="radiant-field-val">{record.content_hash}</div>
                                             </div>
                                         </div>
-                                        <div>
-                                            <div className="radiant-field-lbl">Content Hash (SHA-256)</div>
-                                            <div className="radiant-field-val">{record.content_hash}</div>
+
+                                        <div className="radiant-blurred-block">
+                                            <div className="radiant-lock-overlay">
+                                                <span>🔒</span> Sealed Content (Encrypted)
+                                            </div>
+                                            <div className="radiant-blur-line" style={{ width: '90%' }}></div>
+                                            <div className="radiant-blur-line" style={{ width: '95%' }}></div>
+                                            <div className="radiant-blur-line" style={{ width: '80%' }}></div>
+                                            <div className="radiant-blur-line" style={{ width: '85%' }}></div>
+                                        </div>
+
+                                        <div style={{ marginTop: '24px', opacity: 0.5, fontSize: '11px', lineHeight: '1.5' }}>
+                                            This certificate proves that the information existed in this form at the timestamped date.
                                         </div>
                                     </div>
+                                )}
 
-                                    <div className="radiant-blurred-block" style={{ marginTop: '24px' }}>
-                                        <div className="radiant-lock-overlay">
-                                            <span>🔒</span> Sealed Content (Encrypted)
-                                        </div>
-                                        <div className="radiant-blur-line" style={{ width: '90%' }}></div>
-                                        <div className="radiant-blur-line" style={{ width: '95%' }}></div>
-                                        <div className="radiant-blur-line" style={{ width: '80%' }}></div>
-                                        <div className="radiant-blur-line" style={{ width: '85%' }}></div>
-                                    </div>
-
-                                    <div style={{ marginTop: 'auto', opacity: 0.5, fontSize: '11px', lineHeight: '1.5' }}>
-                                        This certificate proves that the information existed in this form at the timestamped date.
-                                    </div>
-                                </div>
                             </div>
-                        );
-                    }
+                        </div>
+                    );
                 })()}
 
                 {/* 3. TRACTION PANEL */}
@@ -447,7 +496,7 @@ export default function RadiantVerifierPage() {
                                     ) : (
                                         <div className="radiant-success-msg" style={{ padding: '15px', background: 'rgba(50, 205, 50, 0.1)', border: '1px solid rgba(50, 205, 50, 0.3)', borderRadius: '8px', textAlign: 'center' }}>
                                             <div style={{ fontSize: '18px', marginBottom: '4px' }}>✓ Request Sent</div>
-                                            <div style={{ fontSize: '13px', opacity: 0.8 }}>The owner has been notified. Check your email ({requesterEmail}) for an invite.</div>
+                                            <div style={{ fontSize: '13px', opacity: 0.8 }}>The owner has been notified. Check your email ({requesterEmail}).</div>
                                         </div>
                                     )}
                                 </div>

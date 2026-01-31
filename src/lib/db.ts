@@ -28,6 +28,8 @@ type SubmissionRow = {
   unit_label: string;
   nda_enabled: number; // 0 or 1
   nda_text: string | null;
+  pitch_text: string | null;
+  summary_text: string | null;
 };
 
 
@@ -226,6 +228,10 @@ function ensure() {
   if (!colNames.has("nda_enabled")) db.exec(`ALTER TABLE submissions ADD COLUMN nda_enabled INTEGER DEFAULT 0; `);
   if (!colNames.has("nda_text")) db.exec(`ALTER TABLE submissions ADD COLUMN nda_text TEXT; `);
 
+  // --- MIGRATION: Tiered Content (Phase 12) ---
+  if (!colNames.has("summary_text")) db.exec(`ALTER TABLE submissions ADD COLUMN summary_text TEXT; `);
+  if (!colNames.has("pitch_text")) db.exec(`ALTER TABLE submissions ADD COLUMN pitch_text TEXT; `);
+
   // --- MIGRATION: sequence on ledger_anchors ---
   const laCols = db.prepare(`PRAGMA table_info(ledger_anchors)`).all() as Array<{ name: string }>;
   const laHasSequence = laCols.some(c => c.name === "sequence");
@@ -423,6 +429,14 @@ export function dbMarkIssued(
 
   // Update public index
   dbUpdatePublicChainIndex(id);
+}
+
+export function dbSetTieredContent(id: string, pitchText: string | null, summaryText: string | null) {
+  getDb().prepare(`
+    UPDATE submissions
+    SET pitch_text = ?, summary_text = ?
+    WHERE id = ?
+  `).run(pitchText, summaryText, id);
 }
 
 export function dbGetSubmission(idOrRegistry: string): SubmissionRow | null {

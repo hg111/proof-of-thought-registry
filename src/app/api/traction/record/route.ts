@@ -17,20 +17,30 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: 'Record not found' }, { status: 404 });
         }
 
-        // Check for Access Token (Disclosure)
+        // --- SECURITY & TIERED DISCLOSURE LOGIC ---
+
+        // 1. Determine Context: Public (Registry No) vs Owner (UUID)
+        // If recordId looks like "R-..." or "123", it is a Public Interface request.
+        // If recordId looks like a UUID, it is an Owner Interface request (Security by Capability).
+        const isPublicInterface = /^R-\d+$/.test(recordId) || /^\d+$/.test(recordId);
+
+        // 2. Check for Access Token
         const accessToken = searchParams.get('access_token');
         let revealedContent = null;
-        let disclosureType = undefined; // Initialize disclosureType
+        let disclosureType: 'pitch' | 'summary' | 'full' | undefined = undefined;
+        let isAuthorizedViewer = false;
 
         if (accessToken) {
-            // Import dynamically to avoid circular dependency issues if any (though logic is clean)
+            // Import dynamically to avoid circular dependency
             const { dbVerifyAccessToken, dbLogAccess } = await import('@/lib/db');
 
             const verification = dbVerifyAccessToken(accessToken);
             console.log(`[API] VERIFY: Token=${accessToken} Valid=${verification.valid} Record=${verification.recordId} Expected=${record.id}`);
+
             if (verification.valid && verification.recordId === record.id) {
+                isAuthorizedViewer = true;
                 const type = verification.disclosureType || 'full';
-                disclosureType = type; // Set disclosureType here
+                disclosureType = type as any;
 
                 let isNDAFulfilled = true;
                 if ((record as any).nda_enabled) {
@@ -39,22 +49,20 @@ export async function GET(req: NextRequest) {
                     }
                 }
 
-                // Only reveal full text if type is 'full' and NDA is fulfilled
+                // Reveal FULL content (Canonical Proof) only if type is 'full' and NDA accepted
                 if (type === 'full') {
                     if (isNDAFulfilled) {
                         revealedContent = record.canonical_text;
                     }
                 }
 
-                // Pass NDA flags via response properties (dirty attach or clean separate?)
+                // Pass NDA flags via response properties
                 (req as any)._ndaRequired = (record as any).nda_enabled && !isNDAFulfilled;
                 (req as any)._ndaAccepted = !!verification.ndaAcceptedAt;
 
-                // Log Audit Trail
+                // Log Audit Trail (Fire and forget)
                 const ip = req.headers.get('x-forwarded-for') || 'unknown';
                 const ua = req.headers.get('user-agent') || 'unknown';
-
-                // Fire and forget logging (don't block response)
                 try {
                     dbLogAccess(record.id, verification.tokenId || null, ip, ua);
                 } catch (e) {
@@ -63,31 +71,46 @@ export async function GET(req: NextRequest) {
             }
         }
 
-        // Mask sensitive fields for public/unauthorized view
-        // Ideally we should sanitize `record` before sending, but for MVP Owner/Public mix:
-        // We add `revealed_content` if authorized.
+        // 3. Masking Logic
+        // IF Public Interface (Registry No) AND NOT Authorized Viewer:
+        //    -> MASK Summary
+        //    -> MASK Canonical (Always masked if not revealed above)
+        // ELSE (Owner UUID or Authorized):
+        //    -> Show Summary (Owner sees it, Authorized viewer sees it if token allows?)
+        //       Wait, Authorized Viewer with only 'Pitch' token should NOT see Summary?
+        //       Correction: Authorized Viewer logic needs to check `disclosureType`.
+
+        let summaryText = record.summary_text;
+
+        if (isPublicInterface) {
+            if (!isAuthorizedViewer) {
+                // Public Anonymous Visitor -> HIDE Summary
+                summaryText = null;
+            } else {
+                // Authorized Viewer -> Check Scope
+                // If token is 'pitch', hide summary.
+                // If token is 'summary' or 'full', show summary.
+                if (disclosureType === 'pitch') {
+                    summaryText = null;
+                }
+            }
+        }
+        // implicit else: Owner (UUID) sees everything.
 
         return NextResponse.json({
             record: {
                 ...record,
-                // Don't send `canonical_text` by default unless owner (implicit) or authorized?
-                // Currently `dbGetSubmission` returns everything.
-                // We should probably mask `canonical_text` if not owner/authorized.
-                // But existing logic relies on frontend to decide?
-                // Wait, if `canonical_text` is ALWAYS sent, the blurring is fake security.
-                // We MUST mask it here if no token (and not owner context).
-                // However, this endpoint is also used by Dashboard (Owner).
-                // Dashboard requests usually don't carry a special owner token, 
-                // but checking `traction/page.tsx`, it calls `/api/traction/list`.
-                // Checking `src/app/v/[id]/page.tsx`, it calls THIS endpoint.
-                // So this endpoint IS public facing. We MUST mask `canonical_text`.
+                // Mask fields
+                canonical_text: revealedContent ? revealedContent : undefined,
+                content_text_masked: !revealedContent,
 
-                canonical_text: revealedContent ? revealedContent : undefined, // Remove if not revealed
-                content_text_masked: !revealedContent // Flag for UI
+                // Tiered Content
+                summary_text: summaryText,
+                // Pitch is always public (Teaser)
             },
             revealed: !!revealedContent,
 
-            disclosure_type: disclosureType, // Pass type if we had it
+            disclosure_type: disclosureType,
             nda_required: (req as any)._ndaRequired,
             nda_accepted: (req as any)._ndaAccepted
         });

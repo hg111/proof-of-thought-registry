@@ -16,9 +16,10 @@ export default function TractionAccessPage() {
     const [createType, setCreateType] = useState('full'); // 'pitch', 'summary', 'full'
     const [createLoading, setCreateLoading] = useState(false);
 
-    // NDA Settings State
     const [ndaEnabled, setNdaEnabled] = useState(false);
     const [ndaText, setNdaText] = useState('');
+    const [pitchText, setPitchText] = useState('');
+    const [summaryText, setSummaryText] = useState('');
     const [ndaSaving, setNdaSaving] = useState(false);
 
     // Theme
@@ -49,16 +50,18 @@ export default function TractionAccessPage() {
             .then(data => {
                 if (data.record) {
                     setRecord(data.record);
-                    // Init NDA state
+                    // Init Settings
                     setNdaEnabled(!!data.record.nda_enabled);
                     setNdaText(data.record.nda_text || "This information is confidential. By proceeding, you agree not to share or reproduce this content without permission.");
+                    setPitchText(data.record.pitch_text || "");
+                    setSummaryText(data.record.summary_text || "");
                 }
             })
             .catch(err => console.error("Failed to load record", err));
 
         fetchAccessData();
 
-        // Polling for live updates (e.g. NDA signatures)
+        // Polling (NDA signups)
         const pollInterval = setInterval(() => {
             fetchAccessData();
         }, 5000);
@@ -69,11 +72,6 @@ export default function TractionAccessPage() {
             const grantTo = params.get('grant_to');
             if (grantTo) {
                 setShowCreate(true);
-                setCreateLabel(`Specific Grant: ${grantTo}`);
-                // Could ideally parse the email out or use it directly if we had an email field
-                // For now, we append it to the label or similar context
-                // Or better, if we have a recipient field, fill it. 
-                // Since this form is "Label" based, we'll put it there.
                 setCreateLabel(grantTo);
             }
         }
@@ -100,11 +98,23 @@ export default function TractionAccessPage() {
 
     if (!enabled) return null;
 
-    const handleSaveNDA = async () => {
+    const handleSaveSettings = async () => {
         if (!recordId) return;
         setNdaSaving(true);
         try {
-            const res = await fetch('/api/traction/update-nda', {
+            // Save Content
+            await fetch('/api/traction/update-content', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    record_id: recordId,
+                    pitch_text: pitchText,
+                    summary_text: summaryText
+                })
+            });
+
+            // Save NDA
+            await fetch('/api/traction/update-nda', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -113,11 +123,8 @@ export default function TractionAccessPage() {
                     text: ndaText
                 })
             });
-            if (res.ok) {
-                alert("NDA Settings Saved.");
-            } else {
-                alert("Failed to save.");
-            }
+
+            alert("Deal Configuration Saved.");
         } catch (e) {
             console.error(e);
             alert("Error saving settings.");
@@ -147,8 +154,6 @@ export default function TractionAccessPage() {
                     </div>
                 </div>
 
-                {/* CSS Grid is applied to .traction-hero by default in traction.css (1.25fr 0.75fr) */}
-                {/* We removed maxWidth 800px constraint to let it breathe */}
                 <div className="traction-hero" style={{ margin: '0 auto' }}>
 
                     {/* Left: Access Tokens Card */}
@@ -299,51 +304,84 @@ export default function TractionAccessPage() {
                         </div>
                     </div>
 
-                    {/* Right: Security / NDA Card */}
+                    {/* Right: Deal Configuration Card */}
                     <div className="traction-card" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                         <div className="traction-pad" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                            <h2 style={{ fontSize: '16px', marginBottom: '16px', opacity: 0.9 }}>Security & Access Control</h2>
-
-                            <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                <input
-                                    type="checkbox"
-                                    id="ndaToggle"
-                                    checked={ndaEnabled}
-                                    onChange={e => setNdaEnabled(e.target.checked)}
-                                    style={{ transform: 'scale(1.2)', cursor: 'pointer' }}
-                                />
-                                <label htmlFor="ndaToggle" style={{ cursor: 'pointer', fontSize: '14px' }}>
-                                    <strong>Require Non-Disclosure Agreement (NDA)</strong>
-                                    <div style={{ fontSize: '12px', opacity: 0.6, marginTop: '2px' }}>
-                                        Viewers must accept these terms before accessing "Full Disclosure" content.
-                                    </div>
-                                </label>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+                                <h2 style={{ fontSize: '16px', opacity: 0.9, margin: 0 }}>Deal Configuration</h2>
                             </div>
 
-                            {ndaEnabled && (
-                                <div style={{ marginBottom: '16px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                                    <label style={{ display: 'block', fontSize: '12px', opacity: 0.7, marginBottom: '8px' }}>Clickwrap Agreement Terms</label>
-                                    <textarea
-                                        value={ndaText}
-                                        onChange={e => setNdaText(e.target.value)}
-                                        style={{
-                                            width: '100%',
-                                            flex: 1,
-                                            minHeight: '200px',
-                                            background: 'rgba(0,0,0,0.3)',
-                                            border: '1px solid rgba(255,255,255,0.1)',
-                                            borderRadius: '6px',
-                                            padding: '12px',
-                                            color: '#fff',
-                                            fontFamily: 'monospace',
-                                            fontSize: '12px',
-                                            lineHeight: '1.5'
-                                        }}
-                                    />
-                                </div>
-                            )}
+                            <div style={{ flex: 1, overflowY: 'auto', paddingRight: '8px' }}>
+                                {/* Section 1: Content Packaging */}
+                                <div style={{ marginBottom: '24px' }}>
+                                    <h3 style={{ fontSize: '11px', textTransform: 'uppercase', color: '#64748b', letterSpacing: '1px', marginBottom: '12px', fontWeight: 600 }}>1. Content Packaging</h3>
 
-                            <div style={{ textAlign: 'right', marginTop: 'auto' }}>
+                                    <div style={{ marginBottom: '16px' }}>
+                                        <label style={{ display: 'block', fontSize: '12px', opacity: 0.7, marginBottom: '6px' }}>Elevator Pitch (Teaser)</label>
+                                        <textarea
+                                            placeholder="The one-sentence hook or public teaser text..."
+                                            value={pitchText}
+                                            onChange={e => setPitchText(e.target.value)}
+                                            style={{ width: '100%', minHeight: '60px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '10px', color: '#fff', fontSize: '13px' }}
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '12px', opacity: 0.7, marginBottom: '6px' }}>Executive Summary (Partial Access)</label>
+                                        <textarea
+                                            placeholder="Detailed summary revealed to those with 'Summary' or 'Full' access... (You may paste links to external PDFs, slides, or videos here.)"
+                                            value={summaryText}
+                                            onChange={e => setSummaryText(e.target.value)}
+                                            style={{ width: '100%', minHeight: '120px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '10px', color: '#fff', fontSize: '13px', fontFamily: 'monospace' }}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Section 2: Security */}
+                                <div style={{ marginBottom: '24px', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                                    <h3 style={{ fontSize: '11px', textTransform: 'uppercase', color: '#64748b', letterSpacing: '1px', marginBottom: '12px', fontWeight: 600 }}>2. Security & Access</h3>
+
+                                    <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                        <input
+                                            type="checkbox"
+                                            id="ndaToggle"
+                                            checked={ndaEnabled}
+                                            onChange={e => setNdaEnabled(e.target.checked)}
+                                            style={{ transform: 'scale(1.2)', cursor: 'pointer' }}
+                                        />
+                                        <label htmlFor="ndaToggle" style={{ cursor: 'pointer', fontSize: '14px' }}>
+                                            <strong>Require Non-Disclosure Agreement (NDA)</strong>
+                                            <div style={{ fontSize: '12px', opacity: 0.6, marginTop: '2px' }}>
+                                                Viewers must accept terms before seeing "Full Disclosure".
+                                            </div>
+                                        </label>
+                                    </div>
+
+                                    {ndaEnabled && (
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '12px', opacity: 0.7, marginBottom: '6px' }}>Clickwrap Agreement Terms</label>
+                                            <textarea
+                                                value={ndaText}
+                                                onChange={e => setNdaText(e.target.value)}
+                                                style={{
+                                                    width: '100%',
+                                                    minHeight: '120px',
+                                                    background: 'rgba(0,0,0,0.3)',
+                                                    border: '1px solid rgba(255,255,255,0.1)',
+                                                    borderRadius: '6px',
+                                                    padding: '12px',
+                                                    color: '#fff',
+                                                    fontFamily: 'monospace',
+                                                    fontSize: '12px',
+                                                    lineHeight: '1.5'
+                                                }}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div style={{ paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.05)', textAlign: 'right' }}>
                                 <button
                                     className="traction-btn"
                                     style={{
@@ -352,7 +390,7 @@ export default function TractionAccessPage() {
                                         background: 'transparent',
                                         fontWeight: 600
                                     }}
-                                    onClick={handleSaveNDA}
+                                    onClick={handleSaveSettings}
                                     disabled={ndaSaving}
                                 >
                                     {ndaSaving ? "Saving..." : "Save Configuration"}

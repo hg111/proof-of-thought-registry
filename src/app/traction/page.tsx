@@ -495,7 +495,7 @@ export default function TractionReceiptPage() {
                                                         typeClass = 'warn';
                                                     } else if (s.type === 'request_access' || s.type === 'request_more') {
                                                         typeLabel = 'Disclosure Request';
-                                                        typeClass = 'neutral'; // Or a specific color
+                                                        typeClass = 'cyan';
                                                     }
 
                                                     return (
@@ -606,7 +606,7 @@ export default function TractionReceiptPage() {
                     <div className="traction-box">
                         <div className="traction-hd">
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <div className="traction-dot" style={{ background: selectedResponse?.typeClass === 'good' ? 'var(--good)' : (selectedResponse?.typeClass === 'warn' ? 'var(--warn)' : '#fff') }}></div>
+                                <div className="traction-dot" style={{ background: selectedResponse?.typeClass === 'good' ? 'var(--good)' : (selectedResponse?.typeClass === 'warn' ? 'var(--warn)' : (selectedResponse?.typeClass === 'cyan' ? 'var(--cyan)' : '#fff')) }}></div>
                                 <h2>Response Details</h2>
                             </div>
                             <button className="traction-x" onClick={() => setSelectedResponse(null)}>✕</button>
