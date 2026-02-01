@@ -11,6 +11,8 @@ import { buildArtifactCertificatePdf } from "@/lib/pdf";
 import { putArtifactFile } from "@/lib/artifactStorage";
 import { dbSetChainPdfKey } from "@/lib/db";
 
+export const maxDuration = 300; // 5 minutes for large uploads
+
 export async function POST(req: NextRequest) {
   const form = await req.formData();
   const parentId = String(form.get("parentId") || "");
@@ -52,6 +54,9 @@ export async function POST(req: NextRequest) {
   const verifyUrl = `${process.env.APP_BASE_URL}/verify/${parentId}`;
 
   // 3. Generate Certificate (Universal)
+  // OPTIMIZATION: Do not pass large buffers to PDF generator to save memory
+  const shouldEmbed = file.size < 10 * 1024 * 1024; // 10MB limit for embedding/buffer passing
+
   const receipt = await buildArtifactCertificatePdf({
     id: artifactId,
     parentCertificateId: parentId,
@@ -64,7 +69,7 @@ export async function POST(req: NextRequest) {
     contentHash: canonicalHash,
     chainHash: ch,
 
-    fileBuffer: buf, // For optional embedding
+    fileBuffer: shouldEmbed ? buf : undefined, // For optional embedding
     caption: thoughtCaption,
     verificationUrl: verifyUrl,
   });
