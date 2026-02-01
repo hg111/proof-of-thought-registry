@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import SealingAnimation from "@/components/SealingAnimation";
 
 export default function AddArtifactForm({
@@ -13,11 +14,14 @@ export default function AddArtifactForm({
     const [file, setFile] = useState<File | null>(null);
     const [preview, setPreview] = useState<string | null>(null);
     const [sealing, setSealing] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const formRef = useRef<HTMLFormElement>(null);
+    const router = useRouter();
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const f = e.target.files?.[0] || null;
         setFile(f);
+        setError(null);
 
         if (f) {
             if (f.type.startsWith("image/")) {
@@ -31,30 +35,77 @@ export default function AddArtifactForm({
         }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setError(null);
+
+        if (!file) return;
+
         setSealing(true);
-        // Animation plays, then calls onComplete to submit
     };
 
-    const handleAnimationComplete = () => {
-        formRef.current?.requestSubmit(); // This triggers native form submission
+    const handleAnimationComplete = async () => {
+        if (!file) return;
+
+        try {
+            // Get caption
+            const formData = new FormData(formRef.current!);
+            const caption = formData.get("thoughtCaption") as string;
+
+            // STREAMING UPLOAD (RAW BINARY)
+            // This prevents Next.js/Node from buffering the whole file in memory
+            const headers: Record<string, string> = {
+                "x-upload-mode": "raw",
+                "x-parent-id": parentId,
+                "x-token": t,
+                "x-filename": file.name,
+                "x-mimetype": file.type || "application/octet-stream",
+                "x-size": String(file.size),
+            };
+
+            if (caption) {
+                headers["x-caption"] = encodeURIComponent(caption);
+            }
+
+            const res = await fetch("/api/artifacts", {
+                method: "POST",
+                headers,
+                body: file, // Browser streams this automatically
+            });
+
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || "Upload failed");
+            }
+
+            const data = await res.json();
+            if (data.redirect) {
+                window.location.href = data.redirect;
+            } else {
+                router.refresh();
+            }
+
+        } catch (e: any) {
+            console.error("Upload error:", e);
+            setError(e.message || "Failed to seal artifact.");
+            setSealing(false);
+        }
     };
 
     return (
         <>
             {sealing && <SealingAnimation onComplete={handleAnimationComplete} />}
 
+            {error && (
+                <div style={{ padding: 12, background: "#fee2e2", color: "#991b1b", marginBottom: 16, fontSize: 13 }}>
+                    Error: {error}
+                </div>
+            )}
+
             <form
                 ref={formRef}
-                action="/api/artifacts"
-                method="post"
-                encType="multipart/form-data"
                 onSubmit={!sealing ? handleSubmit : undefined}
             >
-                <input type="hidden" name="parentId" value={parentId} />
-                <input type="hidden" name="t" value={t} />
-
                 {/* File Input */}
                 <label className="small">Select File (Any Format)</label>
                 <input
@@ -75,7 +126,7 @@ export default function AddArtifactForm({
                         <p className="small" style={{ fontWeight: 600, marginBottom: 4 }}>Selected Evidence:</p>
                         <p className="small" style={{ marginBottom: 4 }}>Name: {file.name}</p>
                         <p className="small" style={{ marginBottom: 4 }}>Type: {file.type || "Unknown/Binary"}</p>
-                        <p className="small" style={{ marginBottom: 8 }}>Size: {(file.size / 1024).toFixed(1)} KB</p>
+                        <p className="small" style={{ marginBottom: 8 }}>Size: {(file.size / (1024 * 1024)).toFixed(2)} MB</p>
 
                         {preview && (
                             <div style={{ marginTop: 10 }}>
@@ -117,6 +168,7 @@ export default function AddArtifactForm({
 
                 <button
                     type="submit"
+                    disabled={sealing || !file}
                     style={{
                         display: "inline-block",
                         background: "#000",
@@ -126,11 +178,11 @@ export default function AddArtifactForm({
                         border: "1px solid #000",
                         fontSize: 14,
                         cursor: "pointer",
-                        opacity: file ? 1 : 0.5,
-                        pointerEvents: file ? 'auto' : 'none'
+                        opacity: file && !sealing ? 1 : 0.5,
+                        pointerEvents: file && !sealing ? 'auto' : 'none'
                     }}
                 >
-                    Seal Page
+                    {sealing ? "Sealing..." : "Seal Page"}
                 </button>
             </form>
         </>

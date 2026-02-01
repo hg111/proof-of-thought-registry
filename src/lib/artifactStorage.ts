@@ -15,6 +15,13 @@ export function putArtifactFile(parentId: string, artifactId: string, name: stri
   return key; // ✅ IMPORTANT
 }
 
+export function getArtifactPath(parentId: string, artifactId: string, name: string) {
+  const key = path.join("artifacts", parentId, artifactId, name).replaceAll("\\", "/");
+  const full = path.join(config.dataDir, key);
+  fs.mkdirSync(path.dirname(full), { recursive: true });
+  return { key, full };
+}
+
 export function putSubmissionFile(parentId: string, name: string, buf: Buffer) {
   // custody location for genesis / chain receipts
   const dir = path.join(config.dataDir, "submissions", parentId);
