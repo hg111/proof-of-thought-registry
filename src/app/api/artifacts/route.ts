@@ -67,7 +67,15 @@ export async function POST(req: NextRequest) {
 
       const verifyUrl = `${process.env.APP_BASE_URL}/verify/${parentId}`;
 
-      // Generate Receipt (No Embed for Streams)
+      // Logic: Restore thumbnail for small images (~10MB safety limit)
+      let embedBuffer: Buffer | undefined = undefined;
+      if (mimeType.startsWith("image/") && fileSize < 10 * 1024 * 1024) {
+        try {
+          embedBuffer = fs.readFileSync(filePath);
+        } catch (e) { console.error("Failed to read image for thumb", e); }
+      }
+
+      // Generate Receipt (Embed if small image)
       const receipt = await buildArtifactCertificatePdf({
         id: artifactId,
         parentCertificateId: parentId,
@@ -78,7 +86,7 @@ export async function POST(req: NextRequest) {
         sizeBytes: fileSize, // trusted from header (or use fs.statSync(filePath).size)
         contentHash: canonicalHash,
         chainHash: ch,
-        fileBuffer: undefined, // Never embed in streaming mode
+        fileBuffer: embedBuffer,
         caption: thoughtCaption,
         verificationUrl: verifyUrl,
       });
