@@ -15,6 +15,12 @@ export default function AddArtifactForm({
     const [preview, setPreview] = useState<string | null>(null);
     const [sealing, setSealing] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // Upload State
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [uploadComplete, setUploadComplete] = useState(false);
+    const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
+
     const formRef = useRef<HTMLFormElement>(null);
     const router = useRouter();
 
@@ -41,60 +47,97 @@ export default function AddArtifactForm({
 
         if (!file) return;
 
+        // Start Sealing Visuals
         setSealing(true);
+        setUploadProgress(0);
+        setUploadComplete(false);
+
+        // Start Actual Upload
+        performUpload(file);
     };
 
-    const handleAnimationComplete = async () => {
-        if (!file) return;
+    const performUpload = (fileToUpload: File) => {
+        const formData = new FormData(formRef.current!);
+        const caption = formData.get("thoughtCaption") as string;
 
-        try {
-            // Get caption
-            const formData = new FormData(formRef.current!);
-            const caption = formData.get("thoughtCaption") as string;
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "/api/artifacts", true);
 
-            // STREAMING UPLOAD (RAW BINARY)
-            // This prevents Next.js/Node from buffering the whole file in memory
-            const headers: Record<string, string> = {
-                "x-upload-mode": "raw",
-                "x-parent-id": parentId,
-                "x-token": t,
-                "x-filename": file.name,
-                "x-mimetype": file.type || "application/octet-stream",
-                "x-size": String(file.size),
-            };
+        // Headers for Streaming / Raw Upload
+        xhr.setRequestHeader("x-upload-mode", "raw");
+        xhr.setRequestHeader("x-parent-id", parentId);
+        xhr.setRequestHeader("x-token", t);
+        xhr.setRequestHeader("x-filename", fileToUpload.name);
+        xhr.setRequestHeader("x-mimetype", fileToUpload.type || "application/octet-stream");
+        xhr.setRequestHeader("x-size", String(fileToUpload.size));
 
-            if (caption) {
-                headers["x-caption"] = encodeURIComponent(caption);
+        if (caption) {
+            xhr.setRequestHeader("x-caption", encodeURIComponent(caption));
+        }
+
+        // Progress Handler
+        xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable) {
+                const percent = (event.loaded / event.total) * 100;
+                setUploadProgress(percent);
             }
+        };
 
-            const res = await fetch("/api/artifacts", {
-                method: "POST",
-                headers,
-                body: file, // Browser streams this automatically
-            });
-
-            if (!res.ok) {
-                const data = await res.json();
-                throw new Error(data.error || "Upload failed");
-            }
-
-            const data = await res.json();
-            if (data.redirect) {
-                window.location.href = data.redirect;
+        xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                try {
+                    const data = JSON.parse(xhr.response);
+                    setUploadComplete(true);
+                    setUploadProgress(100);
+                    if (data.redirect) {
+                        setRedirectUrl(data.redirect);
+                    } else {
+                        // Fallback refresh
+                        setRedirectUrl(null); // Will just refresh
+                    }
+                } catch (e) {
+                    setError("Invalid response from server");
+                    setSealing(false);
+                }
             } else {
-                router.refresh();
+                try {
+                    const data = JSON.parse(xhr.response);
+                    setError(data.error || "Upload failed");
+                } catch {
+                    setError(`Upload failed: ${xhr.status}`);
+                }
+                setSealing(false);
             }
+        };
 
-        } catch (e: any) {
-            console.error("Upload error:", e);
-            setError(e.message || "Failed to seal artifact.");
+        xhr.onerror = () => {
+            setError("Network Error during upload");
             setSealing(false);
+        };
+
+        xhr.send(fileToUpload);
+    };
+
+    const handleAnimationComplete = () => {
+        // Called when Sealing Animation finishes nicely (Stamped)
+        // At this point, uploadComplete must be true (guaranteed by SealingAnimation logic)
+
+        if (redirectUrl) {
+            window.location.href = redirectUrl;
+        } else {
+            router.refresh();
         }
     };
 
     return (
         <>
-            {sealing && <SealingAnimation onComplete={handleAnimationComplete} />}
+            {sealing && (
+                <SealingAnimation
+                    onComplete={handleAnimationComplete}
+                    uploadProgress={uploadProgress}
+                    uploadComplete={uploadComplete}
+                />
+            )}
 
             {error && (
                 <div style={{ padding: 12, background: "#fee2e2", color: "#991b1b", marginBottom: 16, fontSize: 13 }}>

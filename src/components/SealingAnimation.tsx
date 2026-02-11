@@ -5,11 +5,23 @@ import { useEffect, useState } from "react";
 
 const HEX_CHARS = "0123456789ABCDEF";
 
-export default function SealingAnimation({ onComplete }: { onComplete: () => void }) {
+interface SealingAnimationProps {
+    onComplete: () => void;
+    uploadProgress?: number;
+    uploadComplete?: boolean;
+}
+
+export default function SealingAnimation({
+    onComplete,
+    uploadProgress,
+    uploadComplete = true // Default to true if not controlled (legacy behavior)
+}: SealingAnimationProps) {
     const [phase, setPhase] = useState<"hashing" | "locking" | "stamped">("hashing");
     const [hash, setHash] = useState("");
+    const [minTimeElapsed, setMinTimeElapsed] = useState(false);
 
     // Phase 1: Hashing (Random Hex Stream)
+    // Runs for at least 1.8s, AND until upload is complete
     useEffect(() => {
         if (phase !== "hashing") return;
 
@@ -21,12 +33,20 @@ export default function SealingAnimation({ onComplete }: { onComplete: () => voi
             setHash(s.match(/.{1,8}/g)?.join(" ") || s);
         }, 50);
 
-        const timer = setTimeout(() => {
-            setPhase("locking");
+        // Ensure minimum duration of 1.8s
+        const minTimer = setTimeout(() => {
+            setMinTimeElapsed(true);
         }, 1800);
 
-        return () => { clearInterval(interval); clearTimeout(timer); };
+        return () => { clearInterval(interval); clearTimeout(minTimer); };
     }, [phase]);
+
+    // Check if we can advance from Hashing to Locking
+    useEffect(() => {
+        if (phase === "hashing" && minTimeElapsed && uploadComplete) {
+            setPhase("locking");
+        }
+    }, [phase, minTimeElapsed, uploadComplete]);
 
     // Phase 2: Locking (Transition to Lock Icon)
     useEffect(() => {
@@ -57,7 +77,19 @@ export default function SealingAnimation({ onComplete }: { onComplete: () => voi
             {phase === "hashing" && (
                 <div style={{ fontFamily: "monospace", fontSize: 24, padding: 20, maxWidth: 600, textAlign: "center", wordBreak: "break-all" }}>
                     {hash}
-                    <div style={{ fontSize: 14, marginTop: 20, color: "#666" }}>CRYPTOGRAPHIC HASHING IN PROGRESS...</div>
+                    <div style={{ fontSize: 14, marginTop: 20, color: "#666" }}>
+                        {!uploadComplete && uploadProgress !== undefined && uploadProgress < 100 ? (
+                            <span>UPLOADING EVIDENCE... {Math.round(uploadProgress)}%</span>
+                        ) : (
+                            <span>CRYPTOGRAPHIC HASHING IN PROGRESS...</span>
+                        )}
+                    </div>
+                    {/* Visual Progress Bar */}
+                    {!uploadComplete && uploadProgress !== undefined && (
+                        <div style={{ width: 200, height: 4, background: "#eee", margin: "10px auto", borderRadius: 2 }}>
+                            <div style={{ width: `${uploadProgress}%`, height: "100%", background: "#000", transition: "width 0.2s" }} />
+                        </div>
+                    )}
                 </div>
             )}
 

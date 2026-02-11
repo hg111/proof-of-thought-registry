@@ -8,7 +8,7 @@ type Props =
   | {
     children: React.ReactNode;
     disabled?: boolean;
-    onClick?: () => void;
+    onClick?: (e?: React.MouseEvent) => void;
     type?: "button" | "submit";
     tooltip?: React.ReactNode;
     variant?: "primary" | "secondary";

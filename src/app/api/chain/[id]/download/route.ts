@@ -37,12 +37,19 @@ export async function GET(req: Request, ctx: { params: { id: string } }) {
       return NextResponse.json({ error: "Chain PDF not found on disk." }, { status: 404 });
     }
 
-    const pdfBytes = fs.readFileSync(full);
+    if (!fs.existsSync(full)) {
+      return NextResponse.json({ error: "Chain PDF not found on disk." }, { status: 404 });
+    }
 
-    return new NextResponse(pdfBytes, {
+    const stat = fs.statSync(full);
+    const stream = fs.createReadStream(full);
+
+    // @ts-ignore - Next.js App Router 14+ supports Node streams in NextResponse body
+    return new NextResponse(stream, {
       headers: {
         "content-type": "application/pdf",
         "content-disposition": `attachment; filename="Proof-of-Thought-CHAIN-${sub.id}.pdf"`,
+        "content-length": stat.size.toString(),
         "cache-control": "no-store",
       },
     });

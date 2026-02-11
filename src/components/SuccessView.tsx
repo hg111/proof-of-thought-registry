@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Divider from "@/components/Divider";
 import MonoBlock from "@/components/MonoBlock";
 import Button from "@/components/Button";
+import DownloadButton from "@/components/DownloadButton";
 import dynamic from "next/dynamic";
 import '@/app/traction/traction.css'; // Import traction styles
 
@@ -93,13 +94,13 @@ export default function SuccessView({ sub, artifacts, t, privateUrl }: SuccessVi
                                 </div>
 
                                 <div className="traction-ctaRow" style={{ justifyContent: 'center', gap: '12px' }}>
-                                    <a
-                                        href={`/api/download/${encodeURIComponent(sub.id)}?t=${encodeURIComponent(t)}`}
-                                        className="traction-btn primary"
-                                        style={{ textDecoration: 'none' }}
-                                    >
-                                        Download Certificate (PDF)
-                                    </a>
+                                    <DownloadButton
+                                        url={`/api/download/${encodeURIComponent(sub.id)}?t=${encodeURIComponent(t)}`}
+                                        filename={`Proof-of-Thought-${sub.id}.pdf`}
+                                        label="Download Certificate (PDF)"
+                                        mode="dark"
+                                        className="primary"
+                                    />
                                     <a
                                         href={`/vault?id=${encodeURIComponent(sub.id)}&t=${encodeURIComponent(t)}`}
                                         className="traction-btn ghost"
@@ -201,30 +202,30 @@ export default function SuccessView({ sub, artifacts, t, privateUrl }: SuccessVi
                     Preview in Vault
                 </Button>
 
-                <Button
-                    href={`/api/download/${encodeURIComponent(sub.id)}?t=${encodeURIComponent(t)}`}
+                <DownloadButton
+                    url={`/api/download/${encodeURIComponent(sub.id)}?t=${encodeURIComponent(t)}`}
+                    filename={`Proof-of-Thought-${sub.id}.pdf`}
+                    label="Download PDF"
                     tooltip={
                         <>
                             <strong>This is your original Proof-of-Thought certificate.</strong><br />
                             It establishes when your idea was first sealed <br />under third-party cryptographic custody.
                         </>
                     }
-                >
-                    Download PDF
-                </Button>
+                />
 
                 {artifacts.length > 0 ? (
-                    <Button
-                        href={`/api/chain/${encodeURIComponent(sub.id)}/download?t=${encodeURIComponent(t)}`}
+                    <DownloadButton
+                        url={`/api/chain/${encodeURIComponent(sub.id)}/download?t=${encodeURIComponent(t)}`}
+                        filename={`Proof-of-Thought-CHAIN-${sub.id}.pdf`}
+                        label="Download Chain PDF"
                         tooltip={
                             <>
                                 <strong>This is the full cryptographic lineage of your Thought</strong> —<br />
                                 showing how your idea evolved over time with provable continuity.
                             </>
                         }
-                    >
-                        Download Chain PDF
-                    </Button>
+                    />
                 ) : null}
 
                 <Button
@@ -270,17 +271,17 @@ export default function SuccessView({ sub, artifacts, t, privateUrl }: SuccessVi
                 </Button>
 
                 {sub.record_class === "ENGRAVED" && sub.seal_object_key ? (
-                    <Button
-                        href={`/api/seal/${encodeURIComponent(sub.id)}/download?t=${encodeURIComponent(t)}`}
+                    <DownloadButton
+                        url={`/api/seal/${encodeURIComponent(sub.id)}/download?t=${encodeURIComponent(t)}`}
+                        filename={`Seal-${sub.id}.png`}
+                        label="🔵 Download Seal (PNG)"
                         tooltip={
                             <>
                                 <strong>Download a high-resolution evidentiary seal for this certificate.</strong><br />
                                 The seal encodes key verification details (e.g., hashes and identifiers)<br /> for printing, engraving, or archival use.
                             </>
                         }
-                    >
-                        🔵 Download Seal (PNG)
-                    </Button>
+                    />
                 ) : sub.record_class === "ENGRAVED" ? (
                     <SealPoller />
                 ) : null}

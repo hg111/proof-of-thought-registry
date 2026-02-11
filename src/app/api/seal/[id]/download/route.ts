@@ -64,15 +64,20 @@ export async function GET(req: Request, ctx: { params: { id: string } }) {
     }
 
     // Final check
+    // Final check
     if (!fs.existsSync(fullPath)) {
       return NextResponse.json({ error: "Seal generation failed." }, { status: 500 });
     }
 
-    const png = fs.readFileSync(fullPath);
-    return new NextResponse(png, {
+    const stat = fs.statSync(fullPath);
+    const stream = fs.createReadStream(fullPath);
+
+    // @ts-ignore
+    return new NextResponse(stream, {
       headers: {
         "content-type": "image/png",
         "content-disposition": `attachment; filename="Seal-${sub.id}.png"`,
+        "content-length": stat.size.toString(),
         "cache-control": "no-store",
       },
     });

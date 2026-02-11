@@ -65,12 +65,15 @@ export async function GET(req: Request, ctx: { params: { id: string } }) {
       return NextResponse.json({ error: "PDF not found on disk." }, { status: 404 });
     }
 
-    const pdfBytes = fs.readFileSync(fullPath);
+    const stat = fs.statSync(fullPath);
+    const stream = fs.createReadStream(fullPath);
 
-    return new NextResponse(pdfBytes, {
+    // @ts-ignore
+    return new NextResponse(stream, {
       headers: {
         "content-type": "application/pdf",
         "content-disposition": `attachment; filename="Proof-of-Thought-${sub.id}.pdf"`,
+        "content-length": stat.size.toString(),
         "cache-control": "no-store",
       },
     });
