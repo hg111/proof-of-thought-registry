@@ -29,6 +29,13 @@ export const config = {
   appBaseUrl: opt("APP_BASE_URL", "http://localhost:3333"),
   dataDir: opt("DATA_DIR", path.join(process.cwd(), "data")),
   maxTextChars: optInt("MAX_TEXT_CHARS", 250000),
+  pricingTiersEnabled: (() => {
+    // START FIX: Direct access required for Next.js to inline the value on client
+    // We check both for backward compatibility (server-side might use non-public var)
+    return process.env.NEXT_PUBLIC_PRICING_TIERS_ENABLED === 'true' ||
+      process.env.PRICING_TIERS_ENABLED === 'true';
+    // END FIX
+  })(),
 };
 
 /* ---------- Stripe authority config (FAIL FAST - LAZY) ---------- */

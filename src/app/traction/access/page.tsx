@@ -3,6 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { isTractionUIEnabled } from '@/lib/flags';
+import FeatureLock from '@/components/FeatureLock';
+import { getTier, PricingTier, canAccessDealRoom, TIER_NAMES } from '@/lib/pricing';
 import '../traction.css';
 
 export default function TractionAccessPage() {
@@ -21,6 +23,10 @@ export default function TractionAccessPage() {
     const [pitchText, setPitchText] = useState('');
     const [summaryText, setSummaryText] = useState('');
     const [ndaSaving, setNdaSaving] = useState(false);
+
+    // Tier Gating State
+    const [currentTier, setCurrentTier] = useState<PricingTier>(PricingTier.GENESIS);
+    const [accessGranted, setAccessGranted] = useState(true);
 
     // Theme
     const [theme, setTheme] = useState<'dark' | 'light'>('dark');
@@ -50,6 +56,17 @@ export default function TractionAccessPage() {
             .then(data => {
                 if (data.record) {
                     setRecord(data.record);
+
+                    // --- Pricing Logic ---
+                    const tier = getTier(data.record.record_class);
+                    setCurrentTier(tier);
+
+                    if (!canAccessDealRoom(tier)) {
+                        setAccessGranted(false);
+                    } else {
+                        setAccessGranted(true);
+                    }
+
                     // Init Settings
                     setNdaEnabled(!!data.record.nda_enabled);
                     setNdaText(data.record.nda_text || "This information is confidential. By proceeding, you agree not to share or reproduce this content without permission.");
@@ -133,6 +150,49 @@ export default function TractionAccessPage() {
         }
     };
 
+    // --- LOCK UI ---
+    if (recordId && !accessGranted) {
+        return (
+            <div className="traction-body" data-theme={theme} style={{ overflow: 'hidden', height: "100vh" }}>
+                <FeatureLock
+                    tierRequired={PricingTier.ENGRAVED}
+                    currentTier={currentTier}
+                    featureName="Deal Room"
+                    description="Create secure access links, track NDA signatures, and manage disclosures."
+                />
+
+                {/* Blurred Background Content (Teaser) */}
+                <div className="traction-wrap" style={{ filter: "blur(4px)", pointerEvents: "none", opacity: 0.8 }}>
+                    <div className="traction-topbar">
+                        <div className="traction-brand">
+                            <div className="traction-mark"></div>
+                            <div>
+                                <h1 className="traction-title">Proof-of-Thought / DEAL ROOM</h1>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="traction-hero" style={{ marginTop: 20 }}>
+                        <div className="traction-card" style={{ minHeight: 400, padding: 24 }}>
+                            <div style={{ height: 20, width: "30%", background: "#ddd", marginBottom: 32, borderRadius: 4 }}></div>
+
+                            {/* Dummy Table Rows */}
+                            {[1, 2, 3, 4, 5].map(i => (
+                                <div key={i} style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20, borderBottom: "1px solid #f5f5f5", paddingBottom: 20 }}>
+                                    <div style={{ height: 40, width: 40, borderRadius: "50%", background: "#eee" }}></div>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ height: 14, width: "40%", background: "#ddd", marginBottom: 6, borderRadius: 4 }}></div>
+                                        <div style={{ height: 10, width: "25%", background: "#eee", borderRadius: 4 }}></div>
+                                    </div>
+                                    <div style={{ height: 24, width: 80, background: "#eee", borderRadius: 12 }}></div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="traction-body" data-theme={theme}>
             <div className="traction-wrap">
@@ -142,7 +202,10 @@ export default function TractionAccessPage() {
                         <div className="traction-mark" aria-hidden="true"></div>
                         <div>
                             <h1 className="traction-title" style={{ fontSize: '14px', margin: 0 }}>
-                                Proof-of-Thought <span style={{ opacity: 0.75 }}>/ DEAL ROOM</span> <span style={{ fontSize: '10px', opacity: 0.5, fontWeight: 400 }}>(Under development)</span>
+                                Proof-of-Thought <span style={{ opacity: 0.75 }}>/ DEAL ROOM</span>
+                                <span style={{ marginLeft: '8px', fontSize: '11px', opacity: 0.5, fontWeight: 400, border: '1px solid rgba(255,255,255,0.2)', padding: '1px 4px', borderRadius: '4px' }}>
+                                    {TIER_NAMES[currentTier] || "Genesis"} Tier
+                                </span>
                             </h1>
                             <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', marginTop: '4px', width: '100%' }}></div>
                         </div>

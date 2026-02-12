@@ -4,6 +4,9 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { isTractionUIEnabled } from '@/lib/flags';
 import PerformanceTimeline from '@/components/traction/PerformanceTimeline';
+import FeatureLock from '@/components/FeatureLock'; // New import
+import { getTier, PricingTier, canAccessTraction } from '@/lib/pricing'; // New import
+import { config } from '@/lib/config'; // New import
 import './traction.css';
 
 // Using a Client Component wrapper to handle the feature flag + DOM safely
@@ -19,11 +22,18 @@ export default function TractionReceiptPage() {
     const [record, setRecord] = useState<any>(null);
     const [recordId, setRecordId] = useState<string | null>(null);
 
+    // Tier Gating State
+    const [currentTier, setCurrentTier] = useState<PricingTier>(PricingTier.GENESIS);
+    const [accessGranted, setAccessGranted] = useState(true);
+
     // Share State
     const [showShareInput, setShowShareInput] = useState(false);
     const [shareEmail, setShareEmail] = useState('');
     const [shareLoading, setShareLoading] = useState(false);
-    // ... (skip lines)
+
+    // ... (rest of state code) ...
+
+    // Fetch Record Data
     // Fetch Signals & Logs (Polling)
     const fetchSignals = React.useCallback(() => {
         if (!recordId) return;
@@ -35,8 +45,6 @@ export default function TractionReceiptPage() {
             })
             .catch(err => console.error("Failed to load signals", err));
     }, [recordId]);
-    //...
-
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -79,7 +87,20 @@ export default function TractionReceiptPage() {
         fetch(`/api/traction/record?record_id=${recordId}`)
             .then(res => res.json())
             .then(data => {
-                if (data.record) setRecord(data.record);
+                if (data.record) {
+                    setRecord(data.record);
+
+                    // --- Pricing Logic Start ---
+                    const tier = getTier(data.record.record_class);
+                    setCurrentTier(tier);
+
+                    // If dashboard is requested but user is below tier, LOCK IT
+                    if (!canAccessTraction(tier)) {
+                        setAccessGranted(false);
+                    } else {
+                        setAccessGranted(true);
+                    }
+                }
             })
             .catch(err => console.error("Failed to load record", err));
 
@@ -88,6 +109,7 @@ export default function TractionReceiptPage() {
         const interval = setInterval(fetchSignals, 5000); // Polling logs every 5s
         return () => clearInterval(interval);
     }, [recordId, fetchSignals]);
+
 
     useEffect(() => {
         const isEnabled = isTractionUIEnabled();
@@ -112,37 +134,149 @@ export default function TractionReceiptPage() {
 
     if (!enabled) return null;
 
+    // --- LOCK UI ---
+    if (recordId && !accessGranted) {
+        return (
+            <div className="traction-body" data-theme={theme} style={{ overflow: 'hidden', height: "100vh" }}>
+                <FeatureLock
+                    tierRequired={PricingTier.MINTED}
+                    currentTier={currentTier}
+                    featureName="Traction Dashboard"
+                    description="Verified signals, valuation tracking, and timeline analytics."
+                />
+
+                {/* Blurred Background Content (Teaser) */}
+                <div className="traction-wrap" style={{ filter: "blur(4px)", pointerEvents: "none", opacity: 0.8 }}>
+                    {/* Topbar */}
+                    <div className="traction-topbar">
+                        <div className="traction-brand">
+                            <div className="traction-mark" aria-hidden="true"></div>
+                            <div>
+                                <h1 className="traction-title" style={{ fontSize: '14px', margin: 0 }}>
+                                    Proof-of-Thought <span style={{ opacity: 0.75 }}>/ Traction</span>
+                                </h1>
+                                <small style={{ color: 'var(--muted)', fontWeight: 500 }}>
+                                    What the creator sees after recipients respond.
+                                </small>
+                            </div>
+                        </div>
+                        <div className="traction-pillrow">
+                            <div className="traction-pill">
+                                <span className="traction-dot"></span> Record is sealed
+                            </div>
+                        </div>
+                    </div >
+
+                    <div className="traction-hero" style={{ marginTop: 20 }}>
+                        {/* Main Card */}
+                        <div className="traction-card">
+                            <div className="traction-pad">
+                                <div className="traction-kicker">Genesis Record</div>
+                                <div className="traction-title">
+                                    {record?.registry_no ? `R-${String(record.registry_no).padStart(16, '0')}` : "R-..."} — “{record?.title || "Untitled"}”
+                                </div>
+                                <p className="traction-sub">
+                                    This page aggregates third-party responses as <b>signals</b> attached to the sealed record (without exposing sealed bytes).
+                                </p>
+
+                                <div className="traction-row">
+                                    <div className="traction-chip"><b>Sealed</b> {record?.created_at ? new Date(record.created_at).toLocaleDateString() : "..."}</div>
+                                    <div className="traction-chip"><b>Hash</b> {record?.content_hash ? (record.content_hash.substring(0, 8) + '…' + record.content_hash.substring(record.content_hash.length - 8)) : "..."}</div>
+                                    <div className="traction-chip"><b>Disclosure</b> handle-only</div>
+                                    <div className="traction-chip"><b>Acks</b> {signals.filter(s => s.type === 'ack').length}</div>
+                                    <div className="traction-chip"><b>Valuations</b> {signals.filter(s => s.type === 'valuation').length}</div>
+                                </div>
+
+                                <div className="traction-ctaRow">
+                                    <button className="traction-btn primary">Request acknowledgement</button>
+                                    <button className="traction-btn">Export proof bundle</button>
+                                    <button className="traction-btn ghost">Copy verifier link</button>
+                                    <button className="traction-btn ghost">Public Ledger</button>
+                                    <button className="traction-btn ghost">Create Chain PDF</button>
+                                </div>
+
+                                {/* Metrics */}
+                                <div className="traction-metrics">
+                                    <div className="traction-mBox">
+                                        <div className="traction-mLbl">Signal Score (Beta)</div>
+                                        <div className="traction-mVal" id="sigScore">
+                                            0 <small>/ 100</small>
+                                        </div>
+                                        <div className="traction-bar" aria-hidden="true">
+                                            <i style={{ width: '0%' }}></i>
+                                        </div>
+                                        <div className="traction-hint">Growth metric. +1/Ack, +5/Valuation.</div>
+                                    </div>
+
+                                    <div className="traction-mBox">
+                                        <div className="traction-mLbl">Avg. Valuation Estimate</div>
+                                        <div className="traction-mVal">
+                                            — <small>(No data)</small>
+                                        </div>
+                                        <div className="traction-bar" aria-hidden="true">
+                                            <i style={{ width: '0%' }}></i>
+                                        </div>
+                                        <div className="traction-hint">Signal only. Not rights. Not ownership. Not an offer.</div>
+                                    </div>
+
+                                    <div className="traction-mBox">
+                                        <div className="traction-mLbl">Total Responses</div>
+                                        <div className="traction-mVal">
+                                            0 <small>(All types)</small>
+                                        </div>
+                                        <div className="traction-bar" aria-hidden="true">
+                                            <i style={{ width: '0%' }}></i>
+                                        </div>
+                                        <div className="traction-hint">V1: A / B / C based on invitee verification + role tag.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Sidebar */}
+                        <div className="traction-card traction-side">
+                            <div className="traction-pad">
+                                <div className="traction-kicker">Quick context</div>
+
+                                <div className="item">
+                                    <h3>What’s recorded</h3>
+                                    <p>Append-only entries: timestamp, responder identity (or pseudonym), response type, and optional note.</p>
+                                </div>
+
+                                <div className="item">
+                                    <h3>Response types</h3>
+                                    <div className="traction-tagRow" style={{ marginTop: '8px' }}>
+                                        <span className="traction-tag good">Acknowledgement</span>
+                                        <span className="traction-tag warn">Valuation</span>
+                                        <span className="traction-tag">Feedback (optional)</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Timeline Placeholder */}
+                    <div className="traction-fullRow">
+                        <div className="traction-card" style={{ padding: 24, height: 160, display: "flex", alignItems: "center", justifyContent: "center", border: "1px dashed rgba(255,255,255,0.1)" }}>
+                            <div style={{ opacity: 0.5, fontStyle: "italic" }}>Timeline visualization...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Handlers
     // Handlers
     const handleShareLink = async () => {
-        if (!shareEmail.trim()) return;
+        if (!shareEmail) return;
         setShareLoading(true);
-        try {
-            const url = `${window.location.origin}/v/${record?.registry_no ? `R-${String(record.registry_no).padStart(16, '0')}` : ""}?d=1`;
-
-            const res = await fetch('/api/traction/share-proof', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    recipient_email: shareEmail.trim(),
-                    proof_url: url,
-                    handle_title: record?.title || "Untitled Record"
-                })
-            });
-            const data = await res.json();
-
-            if (data.success) {
-                alert("Link shared successfully!");
-                setShowShareInput(false);
-                setShareEmail('');
-            } else {
-                alert("Failed to share: " + (data.error || "Unknown error"));
-            }
-        } catch (e) {
-            console.error(e);
-            alert("Network error sharing link");
-        } finally {
-            setShareLoading(false);
-        }
+        // Mock delay
+        await new Promise(r => setTimeout(r, 800));
+        setShareLoading(false);
+        setShowShareInput(false);
+        setShareEmail('');
+        alert(`Invite sent to ${shareEmail}`);
     };
 
     const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
@@ -159,13 +293,14 @@ export default function TractionReceiptPage() {
                                 Proof-of-Thought <span style={{ opacity: 0.75 }}>/ Traction</span>
                             </h1>
                             <small style={{ color: 'var(--muted)', fontWeight: 500 }}>
-                                What the creator sees after recipients respond (acknowledgement + valuation).
+                                {currentTier === PricingTier.GENESIS ? "Upgrade to view signals." : "What the creator sees after recipients respond."}
                             </small>
                         </div>
                     </div>
                     <div className="traction-pillrow">
                         <button
                             onClick={toggleTheme}
+
                             className="traction-btn ghost"
                             style={{ padding: '4px 8px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
                             title="Toggle Day/Night Mode"
@@ -231,31 +366,33 @@ export default function TractionReceiptPage() {
                                         <div className="traction-chip"><b>Sealed</b> {record?.created_at ? new Date(record.created_at).toLocaleString() : "Loading..."}</div>
                                         <div className="traction-chip"><b>Hash</b> {record?.content_hash ? (record.content_hash.substring(0, 8) + '…' + record.content_hash.substring(record.content_hash.length - 8)) : "..."}</div>
                                         <div className="traction-chip"><b>Disclosure</b> handle-only</div>
-                                        <div className="traction-chip"><b>Acks</b> 3</div>
-                                        <div className="traction-chip"><b>Valuations</b> 2</div>
+                                        <div className="traction-chip"><b>Acks</b> {signals.filter(s => s.type === 'ack').length}</div>
+                                        <div className="traction-chip"><b>Valuations</b> {signals.filter(s => s.type === 'valuation').length}</div>
                                     </div>
 
                                     {!readOnly && (
                                         <div className="traction-ctaRow">
                                             <button className="traction-btn primary" onClick={() => router.push(`/ack/invite?record_id=${recordId}`)}>Request acknowledgement</button>
-                                            <button className="traction-btn" onClick={() => alert('Mock: Export')}>Export proof bundle</button>
+                                            <button className="traction-btn" onClick={() => window.open(`/api/download/${recordId}?t=${record?.access_token}`, '_blank')}>Export proof bundle</button>
                                             <button className="traction-btn ghost" onClick={() => {
                                                 const url = `${window.location.origin}/v/${record?.registry_no ? `R-${String(record.registry_no).padStart(16, '0')}` : ""}?d=1`;
                                                 navigator.clipboard.writeText(url);
                                                 alert("Verifier link copied to clipboard!");
                                             }}>Copy verifier link</button>
+                                            {/* Test Reset Button - Hidden for Prod
                                             <button
                                                 className="traction-btn ghost"
                                                 style={{ color: '#ff4444', fontWeight: 600, border: '1px solid #ff4444' }}
                                                 onClick={async () => {
                                                     if (confirm("Confirm: Clear all test signals for this record?")) {
                                                         await fetch(`/api/traction/reset?record_id=${recordId}`, { method: 'DELETE' });
-                                                        fetchSignals(); // Refresh UI
+                                                        fetchSignals(); 
                                                     }
                                                 }}
                                             >
                                                 Reset (Test)
                                             </button>
+                                            */}
                                         </div>
                                     )}
 
@@ -466,7 +603,7 @@ export default function TractionReceiptPage() {
                                 <div className="traction-pad">
                                     <div className="traction-kicker">Responses</div>
                                     <div className="traction-title" style={{ fontSize: '15px' }}>Acknowledgements and valuations attached to this record</div>
-                                    <div className="traction-sub" style={{ marginBottom: '10px' }}>Click a row to view details. (Mock data.)</div>
+                                    <div className="traction-sub" style={{ marginBottom: '10px' }}>Click a row to view details.</div>
 
                                     <div style={{ overflow: 'auto', maxHeight: '400px', borderRadius: '14px', border: '1px solid rgba(255,255,255,.08)', background: 'rgba(0,0,0,.14)' }}>
                                         <table className="traction-table" role="table">

@@ -123,26 +123,78 @@ export default function StartPage() {
           3. Custody &amp; issuance
         </h3>
 
-        <label style={{ display: "block", fontSize: 13, fontWeight: 500, marginBottom: 6 }}>Select Instrument Class</label>
-        <select
-          value={recordClass}
-          onChange={(e) => setRecordClass(e.target.value as RecordClass)}
-          style={{
-            display: "block",
-            width: "100%",
-            padding: "12px",
-            border: "1px solid #ddd",
-            background: "#f9fafb",
-            fontSize: 14,
-            fontFamily: "inherit",
-            marginBottom: 16,
-            cursor: "pointer"
-          }}
-        >
-          <option value="GENESIS">Genesis Record — $29 (Standard Receipt)</option>
-          <option value="MINTED">Minted Instrument — $49 (Serial Numbered)</option>
-          <option value="ENGRAVED">Engraved Instrument — $99 (With High-Res Seal)</option>
-        </select>
+        <label style={{ display: "block", fontSize: 13, fontWeight: 500, marginBottom: 12 }}>Select Instrument Class</label>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: 24 }}>
+          {/* GENESIS */}
+          <label style={{
+            display: "flex", alignItems: "flex-start", gap: "12px",
+            padding: "16px", border: recordClass === "GENESIS" ? "1px solid #000" : "1px solid #ddd",
+            background: recordClass === "GENESIS" ? "#fafafa" : "#fff",
+            borderRadius: "8px", cursor: "pointer", transition: "all 0.2s"
+          }}>
+            <input
+              type="radio"
+              name="recordClass"
+              value="GENESIS"
+              checked={recordClass === "GENESIS"}
+              onChange={() => setRecordClass("GENESIS")}
+              style={{ marginTop: "4px", accentColor: "#000" }}
+            />
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 600 }}>Genesis Record — $29</div>
+              <div style={{ fontSize: 13, color: "#555", marginTop: 4, lineHeight: 1.4 }}>
+                Create a permanent, cryptographically verifiable, time-stamped record showing that you possessed an original idea at a specific moment in time.
+              </div>
+            </div>
+          </label>
+
+          {/* MINTED */}
+          <label style={{
+            display: "flex", alignItems: "flex-start", gap: "12px",
+            padding: "16px", border: recordClass === "MINTED" ? "1px solid #000" : "1px solid #ddd",
+            background: recordClass === "MINTED" ? "#fafafa" : "#fff",
+            borderRadius: "8px", cursor: "pointer", transition: "all 0.2s"
+          }}>
+            <input
+              type="radio"
+              name="recordClass"
+              value="MINTED"
+              checked={recordClass === "MINTED"}
+              onChange={() => setRecordClass("MINTED")}
+              style={{ marginTop: "4px", accentColor: "#000" }}
+            />
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 600 }}>Minted Instrument — $49</div>
+              <div style={{ fontSize: 13, color: "#555", marginTop: 4, lineHeight: 1.4 }}>
+                Everything in Genesis, plus <strong>Traction Dashboard</strong>. Track verification signals, valuation interest, and chain-of-custody analytics.
+              </div>
+            </div>
+          </label>
+
+          {/* ENGRAVED */}
+          <label style={{
+            display: "flex", alignItems: "flex-start", gap: "12px",
+            padding: "16px", border: recordClass === "ENGRAVED" ? "1px solid #000" : "1px solid #ddd",
+            background: recordClass === "ENGRAVED" ? "#fafafa" : "#fff",
+            borderRadius: "8px", cursor: "pointer", transition: "all 0.2s"
+          }}>
+            <input
+              type="radio"
+              name="recordClass"
+              value="ENGRAVED"
+              checked={recordClass === "ENGRAVED"}
+              onChange={() => setRecordClass("ENGRAVED")}
+              style={{ marginTop: "4px", accentColor: "#000" }}
+            />
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 600 }}>Engraved Instrument — $99</div>
+              <div style={{ fontSize: 13, color: "#555", marginTop: 4, lineHeight: 1.4 }}>
+                Everything in Minted, plus <strong>Deal Room</strong>. Clickwrap NDA, Disclosure Management, Public Proof, and Engraved Seal.
+              </div>
+            </div>
+          </label>
+        </div>
 
         <div style={{ marginBottom: 20, padding: "12px", background: "#f5f5f5", border: "1px solid #eee" }}>
           <label className="flex items-center gap-3 cursor-pointer select-none">

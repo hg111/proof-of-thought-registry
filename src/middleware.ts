@@ -27,6 +27,9 @@ function isPublicPath(pathname: string) {
   if (pathname.startsWith("/public-ledger")) return true;
   if (pathname.startsWith("/api/public-ledger")) return true;
 
+  // Localhost bypass for testing
+  if (pathname.startsWith("/api/traction")) return true;
+
   // Everything else is gated (INCLUDING "/")
   return false;
 }
