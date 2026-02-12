@@ -155,6 +155,7 @@ export default function AddArtifactForm({
                     style={{ display: "block", marginTop: 8, marginBottom: 16 }}
                     type="file"
                     name="file"
+                    accept=".pdf,.doc,.docx,.txt,.md,.jpg,.jpeg,.png,.webp"
                     required
                     onChange={handleFileChange}
                 />
