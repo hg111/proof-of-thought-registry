@@ -3,6 +3,8 @@ import fs from "fs";
 import path from "path";
 import { config } from "@/lib/config";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
     try {
         const tmpDir = path.join(config.dataDir, "tmp");

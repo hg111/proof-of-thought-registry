@@ -137,7 +137,7 @@ export default function TractionReceiptPage() {
     // --- LOCK UI ---
     if (recordId && !accessGranted) {
         return (
-            <div className="traction-body" data-theme={theme} style={{ overflow: 'hidden', height: "100vh" }}>
+            <div className="traction-body" data-theme={theme}>
                 <FeatureLock
                     tierRequired={PricingTier.MINTED}
                     currentTier={currentTier}
@@ -145,8 +145,8 @@ export default function TractionReceiptPage() {
                     description="Verified signals, valuation tracking, and timeline analytics."
                 />
 
-                {/* Blurred Background Content (Teaser) */}
-                <div className="traction-wrap" style={{ filter: "blur(4px)", pointerEvents: "none", opacity: 0.8 }}>
+                {/* Content underneath (blurred dynamically by FeatureLock) */}
+                <div className="traction-wrap" style={{ pointerEvents: "none", userSelect: "none" }}>
                     {/* Topbar */}
                     <div className="traction-topbar">
                         <div className="traction-brand">
@@ -183,8 +183,8 @@ export default function TractionReceiptPage() {
                                     <div className="traction-chip"><b>Sealed</b> {record?.created_at ? new Date(record.created_at).toLocaleDateString() : "..."}</div>
                                     <div className="traction-chip"><b>Hash</b> {record?.content_hash ? (record.content_hash.substring(0, 8) + '…' + record.content_hash.substring(record.content_hash.length - 8)) : "..."}</div>
                                     <div className="traction-chip"><b>Disclosure</b> handle-only</div>
-                                    <div className="traction-chip"><b>Acks</b> {signals.filter(s => s.type === 'ack').length}</div>
-                                    <div className="traction-chip"><b>Valuations</b> {signals.filter(s => s.type === 'valuation').length}</div>
+                                    <div className="traction-chip"><b>Acks</b> 12</div>
+                                    <div className="traction-chip"><b>Valuations</b> 4</div>
                                 </div>
 
                                 <div className="traction-ctaRow">
@@ -195,15 +195,15 @@ export default function TractionReceiptPage() {
                                     <button className="traction-btn ghost">Create Chain PDF</button>
                                 </div>
 
-                                {/* Metrics */}
+                                {/* Metrics - Mocked for Visual Completeness */}
                                 <div className="traction-metrics">
                                     <div className="traction-mBox">
                                         <div className="traction-mLbl">Signal Score (Beta)</div>
                                         <div className="traction-mVal" id="sigScore">
-                                            0 <small>/ 100</small>
+                                            32 <small>/ 100</small>
                                         </div>
                                         <div className="traction-bar" aria-hidden="true">
-                                            <i style={{ width: '0%' }}></i>
+                                            <i style={{ width: '32%' }}></i>
                                         </div>
                                         <div className="traction-hint">Growth metric. +1/Ack, +5/Valuation.</div>
                                     </div>
@@ -211,10 +211,10 @@ export default function TractionReceiptPage() {
                                     <div className="traction-mBox">
                                         <div className="traction-mLbl">Avg. Valuation Estimate</div>
                                         <div className="traction-mVal">
-                                            — <small>(No data)</small>
+                                            $2.5M <small>(4 signals)</small>
                                         </div>
                                         <div className="traction-bar" aria-hidden="true">
-                                            <i style={{ width: '0%' }}></i>
+                                            <i style={{ width: '45%' }}></i>
                                         </div>
                                         <div className="traction-hint">Signal only. Not rights. Not ownership. Not an offer.</div>
                                     </div>
@@ -222,10 +222,10 @@ export default function TractionReceiptPage() {
                                     <div className="traction-mBox">
                                         <div className="traction-mLbl">Total Responses</div>
                                         <div className="traction-mVal">
-                                            0 <small>(All types)</small>
+                                            16 <small>(All types)</small>
                                         </div>
                                         <div className="traction-bar" aria-hidden="true">
-                                            <i style={{ width: '0%' }}></i>
+                                            <i style={{ width: '100%' }}></i>
                                         </div>
                                         <div className="traction-hint">V1: A / B / C based on invitee verification + role tag.</div>
                                     </div>
@@ -255,10 +255,86 @@ export default function TractionReceiptPage() {
                         </div>
                     </div>
 
-                    {/* Timeline Placeholder */}
+                    {/* Timeline - Mocked */}
                     <div className="traction-fullRow">
-                        <div className="traction-card" style={{ padding: 24, height: 160, display: "flex", alignItems: "center", justifyContent: "center", border: "1px dashed rgba(255,255,255,0.1)" }}>
-                            <div style={{ opacity: 0.5, fontStyle: "italic" }}>Timeline visualization...</div>
+                        <PerformanceTimeline
+                            signals={[
+                                { created_at: new Date(Date.now() - 86400000 * 5).toISOString(), type: 'ack', id: '1' },
+                                { created_at: new Date(Date.now() - 86400000 * 3).toISOString(), type: 'valuation', val_exact: 1000000, id: '2' },
+                                { created_at: new Date(Date.now() - 86400000 * 1).toISOString(), type: 'ack', id: '3' },
+                            ]}
+                            recordCreated={new Date(Date.now() - 86400000 * 7).toISOString()}
+                        />
+                    </div>
+
+                    {/* Responses & Activity Log (Mirroring full view structure) */}
+                    <div className="traction-grid">
+                        <div className="traction-card">
+                            <div className="traction-pad">
+                                <div className="traction-kicker">Responses</div>
+                                <div className="traction-title" style={{ fontSize: '15px' }}>Acknowledgements and valuations attached to this record</div>
+                                <div className="traction-sub" style={{ marginBottom: '10px' }}>Click a row to view details.</div>
+
+                                <div style={{ overflow: 'hidden', borderRadius: '14px', border: '1px solid rgba(255,255,255,.08)', background: 'rgba(0,0,0,.14)' }}>
+                                    <table className="traction-table" role="table">
+                                        <thead>
+                                            <tr>
+                                                <th style={{ width: '38%' }}>Responder</th>
+                                                <th style={{ width: '22%' }}>Signal</th>
+                                                <th style={{ width: '18%' }}>When</th>
+                                                <th style={{ width: '22%' }}>Notes</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {[1, 2, 3].map((i) => (
+                                                <tr key={i}>
+                                                    <td>
+                                                        <div className="traction-person">
+                                                            <div className="traction-avatar" style={{ filter: "blur(4px)" }}>?</div>
+                                                            <div>
+                                                                <p className="traction-pname" style={{ filter: "blur(4px)" }}>Investor Name</p>
+                                                                <div className="traction-pmeta">Invitee</div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <div className="traction-tagRow">
+                                                            <span className={`traction-tag ${i === 2 ? 'warn' : 'good'}`}>
+                                                                {i === 2 ? 'Valuation' : 'Acknowledged'}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="traction-pmeta">Recently</td>
+                                                    <td className="traction-pmeta" style={{ filter: "blur(4px)" }}>This is a private note...</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="traction-card">
+                            <div className="traction-pad">
+                                <div className="traction-kicker">Activity log</div>
+                                <div className="traction-title" style={{ fontSize: '15px' }}>Recent Activity</div>
+                                <div className="traction-side" style={{ maxHeight: '400px', overflowY: 'hidden' }}>
+                                    <div className="item">
+                                        <h3>Viewed by Investor</h3>
+                                        <p>IP: 192.168.1.1 (San Francisco, CA)</p>
+                                        <p className="traction-pmeta">Just now</p>
+                                    </div>
+                                    <div className="item">
+                                        <h3>Invite sent</h3>
+                                        <p>To: angel@example.com (Investor)</p>
+                                        <p className="traction-pmeta">2 hours ago</p>
+                                    </div>
+                                    <div className="item">
+                                        <h3>Sealed</h3>
+                                        <p>Canonical bytes generated + trusted timestamp bound.</p>
+                                        <p className="traction-pmeta">Yesterday</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

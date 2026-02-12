@@ -18,7 +18,8 @@ export default function FeatureLock({
     description
 }: FeatureLockProps) {
     const router = useRouter();
-    const [isVisible, setIsVisible] = useState(false);
+    const [showPopup, setShowPopup] = useState(false);
+    const [showOverlay, setShowOverlay] = useState(false);
 
     const upgradePrice = useMemo(() => {
         if (tierRequired === PricingTier.MINTED) return UPGRADE_PRICES.TO_MINTED;
@@ -29,9 +30,16 @@ export default function FeatureLock({
     const targetTierName = TIER_NAMES[tierRequired];
 
     useEffect(() => {
-        // Delay the lock screen to let the user "glimpse" the dashboard
-        const timer = setTimeout(() => setIsVisible(true), 1200);
-        return () => clearTimeout(timer);
+        // Stage 1: Popup logic (2.0s delay - Clear View)
+        const timer1 = setTimeout(() => setShowPopup(true), 2000);
+
+        // Stage 2: Ghosting logic (5.0s delay - Gradual Fade)
+        const timer2 = setTimeout(() => setShowOverlay(true), 5000);
+
+        return () => {
+            clearTimeout(timer1);
+            clearTimeout(timer2);
+        };
     }, []);
 
     return (
@@ -45,15 +53,18 @@ export default function FeatureLock({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            // Transition for the fade-in effect
-            opacity: isVisible ? 1 : 0,
-            transition: "opacity 0.8s ease-in-out",
-            // The background blur and color
-            backdropFilter: "blur(5px)", // Slightly less blur
-            backgroundColor: "rgba(10, 25, 50, 0.4)", // More transparent dark blue overlay
-            pointerEvents: isVisible ? "auto" : "none", // Allow clicks through while invisible
+            // Background Transition: Gradual ghosting (5s)
+            transition: "backdrop-filter 5s ease, background-color 5s ease",
+            backdropFilter: showOverlay ? "blur(1px)" : "blur(0px)",
+            backgroundColor: showOverlay ? "rgba(10, 25, 50, 0.05)" : "rgba(0,0,0,0)",
+            pointerEvents: showPopup ? "auto" : "none",
         }}>
             <div style={{
+                // Card Appearance Transition (2s to match BG feel)
+                opacity: showPopup ? 1 : 0,
+                transform: showPopup ? "translateY(0)" : "translateY(20px)",
+                transition: "opacity 2s ease, transform 2s ease",
+
                 background: "rgba(10, 20, 40, 0.90)", // Card background
                 border: "1px solid rgba(255, 255, 255, 0.3)", // Thin wireframe border
                 padding: "32px",
