@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState, useRef } from "react";
 
 type Props =
-  | { href: string; children: React.ReactNode; disabled?: boolean; tooltip?: React.ReactNode; variant?: "primary" | "secondary"; size?: "small" | "normal"; style?: React.CSSProperties }
+  | { href: string; children: React.ReactNode; disabled?: boolean; tooltip?: React.ReactNode; variant?: "primary" | "secondary"; size?: "small" | "normal"; style?: React.CSSProperties; mode?: "light" | "dark" }
   | {
     children: React.ReactNode;
     disabled?: boolean;
@@ -14,17 +14,27 @@ type Props =
     variant?: "primary" | "secondary";
     size?: "small" | "normal";
     style?: React.CSSProperties;
+    mode?: "light" | "dark";
   };
 
 export default function Button(props: Props) {
   const [hovered, setHovered] = useState(false);
   const [active, setActive] = useState(false);
+  const isDark = (props as any).mode === "dark";
 
   // Logic for mobile long-press
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const isLongPress = useRef(false);
 
   const className = "inline-block" as const;
+
+  // Dark mode styles (Traction-like)
+  const darkStyle = {
+    background: hovered ? "#334155" : "#1e293b", // Slate 800 standard
+    border: hovered ? "1px solid rgb(33, 100, 200)" : "1px solid #334155", // Standard Blue on hover
+    color: "#e9edf7", // Traction Text
+    boxShadow: "none",
+  };
 
   const style: React.CSSProperties = {
     border: (props as any).variant === "secondary" ? (hovered ? "1px solid #999" : "1px solid #ccc") : (hovered ? "1px solid #0000FF" : "1px solid #bbb"),
@@ -45,6 +55,7 @@ export default function Button(props: Props) {
     alignItems: "center",
     justifyContent: "center",
     boxSizing: "border-box",
+    ...(isDark ? darkStyle : {}),
     ...((props as any).style || {}),
   };
 

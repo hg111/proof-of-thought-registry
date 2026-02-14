@@ -31,12 +31,14 @@ export default function ChainTimeline({
     genesis,
     artifacts,
     accessKey,
-    initialUnitLabel = "PAGE"
+    initialUnitLabel = "PAGE",
+    theme = "light"
 }: {
     genesis: GenesisProp;
     artifacts: ArtifactProp[];
     accessKey: string;
     initialUnitLabel?: string;
+    theme?: "light" | "dark";
 }) {
     const isLocked = false; // Always unlocked per user request
     const [unitLabel, setUnitLabel] = useState(initialUnitLabel);
@@ -51,6 +53,27 @@ export default function ChainTimeline({
     const parts = unitLabel.includes(":") ? unitLabel.split(":") : [unitLabel, unitLabel];
     const genesisLabel = parts[0];
     const chainLabel = parts.length > 1 ? parts[1] : parts[0];
+
+    // Theme Variables
+    const isDark = theme === "dark";
+    const THEME_BLUE = "rgb(33, 100, 200)";
+
+    const styles = {
+        line: isDark ? "rgba(255,255,255,0.1)" : "#E0E7FF",
+        connector: isDark ? THEME_BLUE : "#0000FF",
+        node: isDark ? THEME_BLUE : "#0000FF",
+        halo: isDark ? `rgba(33, 100, 200, 0.3)` : "#0000FF",
+        cardBg: isDark ? "rgba(255, 255, 255, 0.03)" : "#fff",
+        cardBorder: isDark ? `1px solid ${THEME_BLUE}` : "1px solid #000",
+        cardBorderSecondary: isDark ? `1px solid ${THEME_BLUE}` : "1px solid #e0e0e0",
+        textPrimary: isDark ? "#eee" : "#000",
+        textSecondary: isDark ? "#94a3b8" : "#666",
+        textLabel: isDark ? "#0f172a" : "#444", // Inside white box, keep dark
+        labelBg: isDark ? "rgba(255,255,255,0.1)" : "#f5f5f5", // Genesis hash box
+        labelBorder: isDark ? `1px solid rgba(255,255,255,0.1)` : "1px solid #eee",
+        labelText: isDark ? "#ccc" : "#000",
+        inputBorder: isDark ? `1px solid ${THEME_BLUE}` : "1px solid #0000FF",
+    };
 
     // Handler for unit change
     const handleUnitSelect = async (newLabel: string) => {
@@ -117,12 +140,6 @@ export default function ChainTimeline({
         handleUnitSelect(customInput);
     };
 
-    // We render a vertical line with nodes.
-    // CSS Grid to control layout?
-
-    // Structure:
-    // [ TIME ]  ( O )  [ CARD ]
-
     // Helper to format as UTC like "2026.01.10 • 17:43:37 UTC" consistent with PDF
     const fmtUtc = (iso: string) => {
         if (!iso) return "Pending";
@@ -145,14 +162,14 @@ export default function ChainTimeline({
 
     return (
         <div className="chain-timeline" style={{ position: "relative", paddingLeft: "10px", marginTop: 40, marginBottom: 40 }}>
-            {/* The Vertical Line (Faded Gray - Existing) */}
+            {/* The Vertical Line */}
             <div style={{
                 position: "absolute",
                 left: "29px",
                 top: 8,
                 bottom: 20,
                 width: "2px",
-                backgroundColor: "#E0E7FF",
+                backgroundColor: styles.line,
                 zIndex: 0
             }}></div>
 
@@ -163,7 +180,7 @@ export default function ChainTimeline({
                 top: 11, // Match center of Genesis dot (6px padding + 5px radius)
                 bottom: 60,
                 width: "1px",
-                backgroundColor: "#0000FF",
+                backgroundColor: styles.connector,
                 zIndex: 0
             }}></div>
 
@@ -176,7 +193,7 @@ export default function ChainTimeline({
                 {/* Node */}
                 <div style={{ paddingTop: 6, position: "relative" }}>
                     <div style={{
-                        width: 10, height: 10, borderRadius: "50%", background: "#0000FF", position: "relative", zIndex: 2
+                        width: 10, height: 10, borderRadius: "50%", background: styles.node, position: "relative", zIndex: 2
                     }}></div>
                     {/* Active Halo */}
                     {hoveredNode === genesis.id && (
@@ -186,7 +203,7 @@ export default function ChainTimeline({
                             // Top: 11 - 8 = 3. Left: 5 - 8 = -3.
                             top: 3, left: -3,
                             width: 16, height: 16, borderRadius: "50%",
-                            border: "1px solid #0000FF",
+                            border: `1px solid ${styles.halo}`,
                             zIndex: 1
                         }}></div>
                     )}
@@ -194,12 +211,12 @@ export default function ChainTimeline({
 
                 {/* Card */}
                 <div style={{ flex: 1 }}>
-                    <p className="small" style={{ color: "#666", marginBottom: 4 }}>
+                    <p className="small" style={{ color: styles.textSecondary, marginBottom: 4 }}>
                         {fmtUtc(genesis.issuedAt)}
                     </p>
-                    <div style={{ border: "1px solid #000", padding: "16px", background: "#fff" }}>
+                    <div style={{ border: styles.cardBorder, padding: "16px", background: styles.cardBg }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
-                            <span style={{ fontWeight: "bold", fontSize: 13, textTransform: "uppercase", letterSpacing: "0.05em" }}>GENESIS RECORD</span>
+                            <span style={{ fontWeight: "bold", fontSize: 13, textTransform: "uppercase", letterSpacing: "0.05em", color: styles.textPrimary }}>GENESIS RECORD</span>
 
                             {/* Unit Label Selector */}
                             <div
@@ -223,7 +240,9 @@ export default function ChainTimeline({
                                             fontFamily: "monospace",
                                             fontSize: 12,
                                             width: 120,
-                                            border: "1px solid #0000FF",
+                                            background: isDark ? 'transparent' : '#fff',
+                                            color: styles.textPrimary,
+                                            border: styles.inputBorder,
                                             padding: "2px 4px",
                                             outline: "none",
                                             textTransform: "uppercase"
@@ -233,7 +252,7 @@ export default function ChainTimeline({
                                     <span
                                         className="small-mono"
                                         style={{
-                                            color: isLocked ? "#888" : (hoveringLabel ? "#0000FF" : "#888"),
+                                            color: isLocked ? "#888" : (hoveringLabel ? styles.connector : "#888"),
                                             cursor: isLocked ? "default" : "pointer",
                                             textDecoration: !isLocked && hoveringLabel ? "underline" : "none",
                                             transition: "color 0.2s"
@@ -250,7 +269,7 @@ export default function ChainTimeline({
                                     <div style={{
                                         position: "absolute",
                                         top: "100%", right: 0,
-                                        background: "white",
+                                        background: "white", // Always white dropdown for readability, or conditional? Let's keep white for now as it pops over.
                                         border: "1px solid #ccc",
                                         boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                                         zIndex: 100,
@@ -299,9 +318,9 @@ export default function ChainTimeline({
                                 )}
                             </div>
                         </div>
-                        <h3 className="h3" style={{ fontSize: 18, marginBottom: 12 }}>{genesis.label}</h3>
+                        <h3 className="h3" style={{ fontSize: 18, marginBottom: 12, color: styles.textPrimary }}>{genesis.label}</h3>
 
-                        <div style={{ background: "#f5f5f5", padding: "8px 12px", fontSize: 11, fontFamily: "monospace", overflowX: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", border: "1px solid #eee" }}>
+                        <div style={{ background: styles.labelBg, color: styles.labelText, padding: "8px 12px", fontSize: 11, fontFamily: "monospace", overflowX: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", border: styles.labelBorder }}>
                             NONCE: {genesis.hash}
                         </div>
                     </div>
@@ -319,7 +338,7 @@ export default function ChainTimeline({
                     {/* Node */}
                     <div style={{ paddingTop: 6, position: "relative" }}>
                         <div style={{
-                            width: 8, height: 8, borderRadius: "50%", background: "#0000FF",
+                            width: 8, height: 8, borderRadius: "50%", background: styles.node,
                             marginLeft: 1, // Center relative to 10px genesis
                             position: "relative", zIndex: 2
                         }}></div>
@@ -333,7 +352,7 @@ export default function ChainTimeline({
                                 // Left: 5 - 7 = -2.
                                 top: 3, left: -2,
                                 width: 14, height: 14, borderRadius: "50%",
-                                border: "1px solid #0000FF",
+                                border: `1px solid ${styles.halo}`,
                                 zIndex: 1
                             }}></div>
                         )}
@@ -341,29 +360,29 @@ export default function ChainTimeline({
 
                     {/* Card */}
                     <div style={{ flex: 1 }}>
-                        <p className="small" style={{ color: "#666", marginBottom: 4 }}>
+                        <p className="small" style={{ color: styles.textSecondary, marginBottom: 4 }}>
                             {fmtUtc(a.issuedAt)}
                         </p>
 
-                        <div style={{ border: "1px solid #e0e0e0", padding: "16px", background: "#fff", transition: "all 0.2s" }}>
+                        <div style={{ border: styles.cardBorderSecondary, padding: "16px", background: styles.cardBg, transition: "all 0.2s" }}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
-                                <span style={{ fontWeight: "bold", fontSize: 13, textTransform: "uppercase", color: "#444" }}>SEALED ATTACHMENT</span>
+                                <span style={{ fontWeight: "bold", fontSize: 13, textTransform: "uppercase", color: styles.textSecondary }}>SEALED ATTACHMENT</span>
                                 <span className="small-mono" style={{ color: "#888" }}>{chainLabel} {idx + 2}</span>
                             </div>
 
-                            <h4 style={{ fontSize: 16, marginBottom: 8, fontWeight: 500 }}>{a.filename}</h4>
+                            <h4 style={{ fontSize: 16, marginBottom: 8, fontWeight: 500, color: styles.textPrimary }}>{a.filename}</h4>
 
                             {a.note && (
-                                <p style={{ fontSize: 14, fontStyle: "italic", color: "#555", marginBottom: 12, borderLeft: "2px solid #eee", paddingLeft: 8 }}>
+                                <p style={{ fontSize: 14, fontStyle: "italic", color: styles.textSecondary, marginBottom: 12, borderLeft: "2px solid #eee", paddingLeft: 8 }}>
                                     “{a.note}”
                                 </p>
                             )}
 
                             <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-                                <Button size="small" variant="secondary" href={`/vault?id=${a.id}&t=${accessKey}`}>
+                                <Button size="small" variant="secondary" href={`/vault?id=${a.id}&t=${accessKey}`} style={isDark ? { background: '#1e293b', color: '#e2e8f0', borderColor: '#334155' } : undefined}>
                                     Preview Original
                                 </Button>
-                                <Button size="small" variant="secondary" href={`/api/view/${a.id}?t=${accessKey}`}>
+                                <Button size="small" variant="secondary" href={`/api/view/${a.id}?t=${accessKey}`} style={isDark ? { background: '#1e293b', color: '#e2e8f0', borderColor: '#334155' } : undefined}>
                                     Preview & Download Sealed Receipt (PDF)
                                 </Button>
                                 <span style={{ fontSize: 12, alignSelf: "center", color: '#999', fontFamily: 'monospace' }}>
@@ -379,15 +398,15 @@ export default function ChainTimeline({
             <div style={{ display: "flex", gap: 24, position: "relative", zIndex: 1 }}>
                 <div style={{ paddingTop: 6 }}>
                     <div style={{
-                        width: 8, height: 8, borderRadius: "50%", border: "2px solid #ccc", background: "#fff",
+                        width: 8, height: 8, borderRadius: "50%", border: isDark ? "2px solid #444" : "2px solid #ccc", background: isDark ? "transparent" : "#fff",
                         marginLeft: 1, // Match artifact alignment
-                        boxShadow: "0 0 0 4px #fff"
+                        boxShadow: isDark ? "none" : "0 0 0 4px #fff"
                     }}></div>
                 </div>
                 <div>
                     <p className="small" style={{ color: "#999", marginBottom: 4 }}>Next Block</p>
                     <div>
-                        <Button href={`/success/add-artifact?id=${encodeURIComponent(genesis.id)}&t=${encodeURIComponent(accessKey)}`} variant="primary">
+                        <Button href={`/success/add-artifact?id=${encodeURIComponent(genesis.id)}&t=${encodeURIComponent(accessKey)}&theme=${isDark ? 'dark' : 'light'}`} variant="primary" style={isDark ? { background: 'rgb(33, 100, 200)', color: '#fff', border: 'none' } : undefined}>
                             + Seal New {chainLabel.charAt(0) + chainLabel.slice(1).toLowerCase()}
                         </Button>
                     </div>

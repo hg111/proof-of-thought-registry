@@ -8,17 +8,23 @@ const HEX_CHARS = "0123456789ABCDEF";
 interface SealingAnimationProps {
     onComplete: () => void;
     uploadProgress?: number;
+    theme?: "light" | "dark";
     uploadComplete?: boolean;
 }
 
 export default function SealingAnimation({
     onComplete,
     uploadProgress,
+    theme = "light",
     uploadComplete = true // Default to true if not controlled (legacy behavior)
 }: SealingAnimationProps) {
     const [phase, setPhase] = useState<"hashing" | "locking" | "stamped">("hashing");
     const [hash, setHash] = useState("");
     const [minTimeElapsed, setMinTimeElapsed] = useState(false);
+
+    const isDark = theme === "dark";
+    const bgColor = isDark ? "rgba(5, 6, 8, 0.95)" : "rgba(255,255,255,0.9)";
+    const textColor = isDark ? "#e9edf7" : "#111";
 
     // Phase 1: Hashing (Random Hex Stream)
     // Runs for at least 1.8s, AND until upload is complete
@@ -69,7 +75,8 @@ export default function SealingAnimation({
     return (
         <div style={{
             position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
-            background: "rgba(255,255,255,0.9)",
+            background: bgColor,
+            color: textColor,
             backdropFilter: "blur(5px)",
             zIndex: 9999,
             display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center"
@@ -77,7 +84,7 @@ export default function SealingAnimation({
             {phase === "hashing" && (
                 <div style={{ fontFamily: "monospace", fontSize: 24, padding: 20, maxWidth: 600, textAlign: "center", wordBreak: "break-all" }}>
                     {hash}
-                    <div style={{ fontSize: 14, marginTop: 20, color: "#666" }}>
+                    <div style={{ fontSize: 14, marginTop: 20, color: isDark ? "#a6b0c5" : "#666" }}>
                         {!uploadComplete && uploadProgress !== undefined && uploadProgress < 100 ? (
                             <span>UPLOADING EVIDENCE... {Math.round(uploadProgress)}%</span>
                         ) : (
@@ -86,8 +93,8 @@ export default function SealingAnimation({
                     </div>
                     {/* Visual Progress Bar */}
                     {!uploadComplete && uploadProgress !== undefined && (
-                        <div style={{ width: 200, height: 4, background: "#eee", margin: "10px auto", borderRadius: 2 }}>
-                            <div style={{ width: `${uploadProgress}%`, height: "100%", background: "#000", transition: "width 0.2s" }} />
+                        <div style={{ width: 200, height: 4, background: isDark ? "#24304a" : "#eee", margin: "10px auto", borderRadius: 2 }}>
+                            <div style={{ width: `${uploadProgress}%`, height: "100%", background: isDark ? "#6aa6ff" : "#000", transition: "width 0.2s" }} />
                         </div>
                     )}
                 </div>
@@ -95,7 +102,7 @@ export default function SealingAnimation({
 
             {phase === "locking" && (
                 <div style={{ animation: "popIn 0.3s ease-out" }}>
-                    <svg width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="100" height="100" viewBox="0 0 24 24" fill="none" stroke={textColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                         <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                     </svg>
@@ -105,7 +112,7 @@ export default function SealingAnimation({
             {phase === "stamped" && (
                 <div style={{ position: "relative" }}>
                     <div style={{ opacity: 0.3 }}>
-                        <svg width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="100" height="100" viewBox="0 0 24 24" fill="none" stroke={textColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                             <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                         </svg>
@@ -113,11 +120,11 @@ export default function SealingAnimation({
                     <div style={{
                         position: "absolute", top: "20%", left: "-10%",
                         transform: "rotate(-15deg) scale(1.5)",
-                        border: "4px solid #000",
+                        border: `4px solid ${textColor}`,
                         padding: "4px 12px",
                         fontSize: 24, fontWeight: "900",
-                        color: "#000",
-                        background: "rgba(255,255,255,0.8)",
+                        color: textColor,
+                        background: isDark ? "rgba(5, 6, 8, 0.8)" : "rgba(255,255,255,0.8)",
                         animation: "stampslam 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards"
                     }}>
                         ISSUED

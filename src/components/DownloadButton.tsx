@@ -76,53 +76,25 @@ export default function DownloadButton({
         xhr.send();
     };
 
-    // --- TRACTION DARK MODE ---
-    if (mode === "dark") {
-        const bgStyle: React.CSSProperties = downloading
-            ? {
-                background: `linear-gradient(90deg, rgba(255,255,255,0.2) ${progress}%, transparent ${progress}%)`,
-                cursor: "wait",
-            }
-            : {};
-
-        return (
-            <button
-                onClick={handleDownload}
-                className={`traction-btn ${className || ""}`}
-                style={{ ...style, ...bgStyle, position: "relative", overflow: "hidden" }}
-                title={typeof tooltip === "string" ? tooltip : undefined}
-            >
-                {downloading ? (
-                    <span>
-                        {progress > 0 && progress < 100 ? `${Math.round(progress)}% ` : ""}
-                        Downloading...
-                    </span>
-                ) : error ? (
-                    <span style={{ color: '#ff6b6b' }}>Retry Download</span>
-                ) : (
-                    label
-                )}
-            </button>
-        );
-    }
-
-    // --- LIGHT MODE (Legacy Button Component) ---
-    const lightProgressStyle: React.CSSProperties = downloading
-        ? {
-            background: `linear-gradient(90deg, #e0f2fe ${progress}%, #fff ${progress}%)`,
-            borderColor: "#bae6fd",
-            color: "#0369a1",
-            cursor: "wait",
-        }
-        : {};
-
     return (
         <Button
             onClick={handleDownload}
             tooltip={tooltip}
-            style={{ ...style, ...lightProgressStyle }}
-            // If error, force a red border style via style prop override
-            variant={error ? undefined : "secondary"}
+            mode={mode} // Pass mode to Button for standard dark/light styling
+            style={{
+                ...style,
+                ...((mode === 'dark' && downloading) ? {
+                    background: `linear-gradient(90deg, rgba(255,255,255,0.2) ${progress}%, #1e293b ${progress}%)`,
+                    cursor: "wait",
+                } : (mode === 'light' && downloading) ? lightProgressStyle : {}),
+                position: "relative",
+                overflow: "hidden"
+            }}
+            variant={error ? undefined : "secondary"} // Secondary variant triggers button's default styles which we want, or handle custom?
+        // Actually, Button's logic for secondary in dark mode might need check. 
+        // In Button.tsx, standard variant=secondary uses light gray bg in light mode.
+        // In dark mode, our new default darkStyle applies regardless of variant unless overridden.
+        // So simply passing mode="dark" should give us the Slate 800 background.
         >
             {downloading ? (
                 <span>
@@ -130,7 +102,7 @@ export default function DownloadButton({
                     Downloading...
                 </span>
             ) : error ? (
-                <span style={{ color: 'red' }}>Retry</span>
+                <span style={{ color: mode === 'dark' ? '#ff6b6b' : 'red' }}>Retry</span>
             ) : (
                 label
             )}

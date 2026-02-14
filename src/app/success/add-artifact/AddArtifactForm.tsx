@@ -7,9 +7,11 @@ import SealingAnimation from "@/components/SealingAnimation";
 export default function AddArtifactForm({
     parentId,
     t,
+    theme = "light"
 }: {
     parentId: string;
     t: string;
+    theme?: "light" | "dark";
 }) {
     const [file, setFile] = useState<File | null>(null);
     const [preview, setPreview] = useState<string | null>(null);
@@ -23,6 +25,8 @@ export default function AddArtifactForm({
 
     const formRef = useRef<HTMLFormElement>(null);
     const router = useRouter();
+
+    const isDark = theme === "dark";
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const f = e.target.files?.[0] || null;
@@ -123,6 +127,7 @@ export default function AddArtifactForm({
         // At this point, uploadComplete must be true (guaranteed by SealingAnimation logic)
 
         if (redirectUrl) {
+            // Keep theme if we redirect back to success (though success page reads localStorage usually)
             window.location.href = redirectUrl;
         } else {
             router.refresh();
@@ -136,6 +141,7 @@ export default function AddArtifactForm({
                     onComplete={handleAnimationComplete}
                     uploadProgress={uploadProgress}
                     uploadComplete={uploadComplete}
+                    theme={theme}
                 />
             )}
 
@@ -150,9 +156,12 @@ export default function AddArtifactForm({
                 onSubmit={!sealing ? handleSubmit : undefined}
             >
                 {/* File Input */}
-                <label className="small">Select File (Any Format)</label>
+                <label className="small" style={{ color: isDark ? '#ccc' : undefined }}>Select File (Any Format)</label>
                 <input
-                    style={{ display: "block", marginTop: 8, marginBottom: 16 }}
+                    style={{
+                        display: "block", marginTop: 8, marginBottom: 16,
+                        color: isDark ? '#fff' : undefined
+                    }}
                     type="file"
                     name="file"
                     accept=".pdf,.doc,.docx,.txt,.md,.jpg,.jpeg,.png,.webp"
@@ -164,33 +173,33 @@ export default function AddArtifactForm({
                     <div style={{
                         marginBottom: 20,
                         padding: 16,
-                        background: "#f9fafb",
-                        border: "1px solid #e5e7eb"
+                        background: isDark ? "rgba(255,255,255,0.05)" : "#f9fafb",
+                        border: isDark ? "1px solid rgba(255,255,255,0.1)" : "1px solid #e5e7eb"
                     }}>
-                        <p className="small" style={{ fontWeight: 600, marginBottom: 4 }}>Selected Evidence:</p>
-                        <p className="small" style={{ marginBottom: 4 }}>Name: {file.name}</p>
-                        <p className="small" style={{ marginBottom: 4 }}>Type: {file.type || "Unknown/Binary"}</p>
-                        <p className="small" style={{ marginBottom: 8 }}>Size: {(file.size / (1024 * 1024)).toFixed(2)} MB</p>
+                        <p className="small" style={{ fontWeight: 600, marginBottom: 4, color: isDark ? '#fff' : undefined }}>Selected Evidence:</p>
+                        <p className="small" style={{ marginBottom: 4, color: isDark ? '#ccc' : undefined }}>Name: {file.name}</p>
+                        <p className="small" style={{ marginBottom: 4, color: isDark ? '#ccc' : undefined }}>Type: {file.type || "Unknown/Binary"}</p>
+                        <p className="small" style={{ marginBottom: 8, color: isDark ? '#ccc' : undefined }}>Size: {(file.size / (1024 * 1024)).toFixed(2)} MB</p>
 
                         {preview && (
                             <div style={{ marginTop: 10 }}>
                                 <img
                                     src={preview}
                                     alt="Preview"
-                                    style={{ maxWidth: "100%", maxHeight: 200, border: "1px solid #ddd" }}
+                                    style={{ maxWidth: "100%", maxHeight: 200, border: isDark ? "1px solid #444" : "1px solid #ddd" }}
                                 />
                             </div>
                         )}
 
                         {!preview && (
-                            <div style={{ marginTop: 10, fontStyle: 'italic', fontSize: 12, color: '#666' }}>
+                            <div style={{ marginTop: 10, fontStyle: 'italic', fontSize: 12, color: isDark ? '#888' : '#666' }}>
                                 Binary/Document file will be sealed securely.
                             </div>
                         )}
                     </div>
                 )}
 
-                <label className="small">Caption / Note (optional)</label>
+                <label className="small" style={{ color: isDark ? '#ccc' : undefined }}>Caption / Note (optional)</label>
                 <textarea
                     name="thoughtCaption"
                     placeholder="One sentence: why this sealed page exists…"
@@ -202,7 +211,9 @@ export default function AddArtifactForm({
                         marginTop: 8,
                         marginBottom: 16,
                         padding: "10px 12px",
-                        border: "1px solid #000",
+                        border: isDark ? "1px solid #444" : "1px solid #000",
+                        background: isDark ? "rgba(0,0,0,0.2)" : "#fff",
+                        color: isDark ? "#fff" : "#000",
                         borderRadius: 0,
                         fontSize: 14,
                         fontFamily: "inherit",
@@ -215,15 +226,16 @@ export default function AddArtifactForm({
                     disabled={sealing || !file}
                     style={{
                         display: "inline-block",
-                        background: "#000",
-                        color: "#fff",
+                        background: isDark ? "#fff" : "#000",
+                        color: isDark ? "#000" : "#fff",
                         padding: "10px 14px",
                         borderRadius: 0,
-                        border: "1px solid #000",
+                        border: isDark ? "1px solid #fff" : "1px solid #000",
                         fontSize: 14,
                         cursor: "pointer",
                         opacity: file && !sealing ? 1 : 0.5,
-                        pointerEvents: file && !sealing ? 'auto' : 'none'
+                        pointerEvents: file && !sealing ? 'auto' : 'none',
+                        transition: 'all 0.2s'
                     }}
                 >
                     {sealing ? "Sealing..." : "Seal Page"}

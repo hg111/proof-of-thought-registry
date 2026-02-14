@@ -4,7 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import SealingAnimation from "./SealingAnimation";
 
-export default function SuccessPageWrapper({ children }: { children: React.ReactNode }) {
+export default function SuccessPageWrapper({ children, theme }: { children: React.ReactNode; theme?: "light" | "dark" }) {
     const searchParams = useSearchParams();
     // Check if ?animate=true is present
     const shouldAnimate = searchParams.get("animate") === "true";
@@ -53,7 +53,7 @@ export default function SuccessPageWrapper({ children }: { children: React.React
     if (!animationComplete) {
         return (
             <>
-                <SealingAnimation onComplete={handleComplete} />
+                <SealingAnimation onComplete={handleComplete} theme={theme} />
                 {children}
             </>
         );
