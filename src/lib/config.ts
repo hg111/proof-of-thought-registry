@@ -32,8 +32,9 @@ export const config = {
   pricingTiersEnabled: (() => {
     // START FIX: Direct access required for Next.js to inline the value on client
     // We check both for backward compatibility (server-side might use non-public var)
-    return process.env.NEXT_PUBLIC_PRICING_TIERS_ENABLED === 'true' ||
-      process.env.PRICING_TIERS_ENABLED === 'true';
+    // Default to true if undefined to ensure active in Production
+    const val = process.env.NEXT_PUBLIC_PRICING_TIERS_ENABLED ?? process.env.PRICING_TIERS_ENABLED;
+    return val === undefined ? true : val === 'true';
     // END FIX
   })(),
 };
