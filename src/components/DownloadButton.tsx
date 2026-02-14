@@ -86,7 +86,10 @@ export default function DownloadButton({
                 ...((mode === 'dark' && downloading) ? {
                     background: `linear-gradient(90deg, rgba(255,255,255,0.2) ${progress}%, #1e293b ${progress}%)`,
                     cursor: "wait",
-                } : (mode === 'light' && downloading) ? lightProgressStyle : {}),
+                } : (mode === 'light' && downloading) ? {
+                    background: `linear-gradient(90deg, #cbd5e1 ${progress}%, #f3f4f6 ${progress}%)`,
+                    cursor: "wait",
+                } : {}),
                 position: "relative",
                 overflow: "hidden"
             }}
