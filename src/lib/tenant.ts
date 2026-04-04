@@ -1,4 +1,4 @@
-export const isWillsTheme = process.env.NEXT_PUBLIC_TENANT?.toLowerCase().startsWith('will');
+export const isWillsTheme = process.env.NEXT_PUBLIC_TENANT?.toLowerCase()?.startsWith('will');
 
 export const TENANT_CONFIG = {
     appName: isWillsTheme ? "WILL-SAFE™" : "PROOF OF THOUGHT™",
