@@ -4,6 +4,7 @@ import { rgb } from "pdf-lib";
 import fs from "fs";
 import path from "path";
 import fontkit from "@pdf-lib/fontkit";
+import { TENANT_CONFIG } from "./tenant";
 
 
 const fontRegularBytes = fs.readFileSync(
@@ -163,7 +164,7 @@ export async function buildCertificatePdf(args: {
 
     // Header style (matches what you outlined)
     const reg = meta.registryNo ?? "—";
-    line(`PROOF OF THOUGHT™   Registry ${reg}   ${meta.id}`, fontSerifBold);
+    line(`${TENANT_CONFIG.appName}   Registry ${reg}   ${meta.id}`, fontSerifBold);
 
     // issued + record (+ parent if present)
     const issued = fmtUtc(meta.issuedAtUtc);
@@ -221,7 +222,7 @@ export async function buildCertificatePdf(args: {
   };
 
   // Header
-  drawText("PROOF OF THOUGHT™", { font: fontSerif, size: 16 });
+  drawText(TENANT_CONFIG.appName, { font: fontSerif, size: 16 });
   y -= 22;
   // Capture baseline Y for aligning seal top edge
   const yCustodianBaseline = y;
@@ -247,7 +248,7 @@ export async function buildCertificatePdf(args: {
     page1.drawImage(sharedSealImg, { x: xSeal, y: ySeal, width: drawW, height: drawH });
   }
 
-  drawText("Certificate of Conception & Possession", { font: fontSerifBold, size: 13 });
+  drawText(TENANT_CONFIG.startTitle, { font: fontSerifBold, size: 13 });
   y -= 18;
 
   // Meta blocks (slightly tighter than before to help 1-page fit)
@@ -362,7 +363,7 @@ export async function buildCertificatePdf(args: {
 
   if (linesOnCover > 0) {
     y -= 8;
-    drawText("Original Submission (verbatim)", { font: fontSerifBold, size: 10.5 });
+    drawText(TENANT_CONFIG.startSection2, { font: fontSerifBold, size: 10.5 });
     y -= 14;
 
     const boxX = margin;
@@ -463,7 +464,7 @@ export async function buildCertificatePdf(args: {
     while (idx < subLines.length) {
       const { page, y: yStart } = addPageWithHeader(meta);
 
-      page.drawText("Original Submission (verbatim)", {
+      page.drawText(TENANT_CONFIG.startSection2, {
         x: margin,
         y: yStart,
         size: 11,
@@ -555,7 +556,7 @@ export async function buildArtifactCertificatePdf(args: {
   };
 
   // --- Header ---
-  drawText("PROOF OF THOUGHT™", { font: fontSerif, size: 16 });
+  drawText(TENANT_CONFIG.appName, { font: fontSerif, size: 16 });
   y -= 22;
   drawText("Independent Digital Evidence Custodian", { font: fontSerif, size: 10 });
   y -= 18;

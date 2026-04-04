@@ -42,6 +42,20 @@ export const TENANT_CONFIG = {
         { title: "Receive your certificate.", desc: "Download a formal PDF with a public verification link." },
         { title: "Get traction.", desc: "Receive early market validation or valuation signals." }
     ],
+    startTitle: isWillsTheme ? "Create a Cryptographic Will Record" : "Create a Certificate of Conception & Possession",
+    startSection2: isWillsTheme ? "2. The Document" : "2. The Thought",
+    startPlaceholder: isWillsTheme ? "Paste or type the contents of your will, trust, or estate document here..." : "Enter your idea, claim, or prose here directly...",
+    tierDescriptions: {
+        genesis: isWillsTheme 
+            ? "Create a permanent, cryptographically verifiable, time-stamped record of your estate documents."
+            : "Create a permanent, cryptographically verifiable, time-stamped record showing that you possessed an original idea at a specific moment in time.",
+        minted: isWillsTheme
+            ? "Everything in Genesis, plus Traction Dashboard. Track verification signals and chain-of-custody analytics for your estate."
+            : "Everything in Genesis, plus Traction Dashboard. Track verification signals, valuation interest, and chain-of-custody analytics.",
+        engraved: isWillsTheme
+            ? "Everything in Minted, plus Deal Room. Securely give executors access via clicking a private link, and attach Clickwrap NDAs."
+            : "Everything in Minted, plus Deal Room. Clickwrap NDA, Disclosure Management, Public Proof, and Engraved Seal."
+    },
     recordType: isWillsTheme ? "Estate Record" : "Genesis Record",
     whitepaperLinkText: isWillsTheme ? "" : "Read the Founding White Paper \u2192",
     footerTagline: isWillsTheme ? "WILL-SAFE™ \u2022 Cryptographic Custody" : "PROOF OF THOUGHT™ \u2022 Patent Pending",

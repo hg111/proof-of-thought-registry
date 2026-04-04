@@ -1,3 +1,5 @@
+import { TENANT_CONFIG } from "@/lib/tenant";
+
 export default function GatePage({
   searchParams,
 }: {
@@ -49,7 +51,7 @@ export default function GatePage({
       </form>
 
       <div style={{ marginTop: 40, paddingTop: 24, borderTop: '1px solid #eee', fontSize: 13, lineHeight: 1.6, opacity: 0.7, color: '#666' }}>
-        <p style={{ fontWeight: 600, marginBottom: 8 }}>Proof of Thought is currently in private beta.</p>
+        <p style={{ fontWeight: 600, marginBottom: 8 }}>{TENANT_CONFIG.appName} is currently in private beta.</p>
         <p>
           Access is limited and granted selectively to creators, researchers, and partners exploring provenance, custody, and controlled disclosure.
         </p>

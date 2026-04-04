@@ -4,6 +4,7 @@ import "./start.css";
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Notice from "@/components/Notice";
+import { TENANT_CONFIG } from "@/lib/tenant";
 import type { RecordClass } from "@/lib/records";
 
 function StartPageContent() {
@@ -80,7 +81,7 @@ function StartPageContent() {
           </button>
         </div>
 
-        <h1 className="start-h1">Create a Certificate of Conception &amp; Possession</h1>
+        <h1 className="start-h1">{TENANT_CONFIG.startTitle}</h1>
         <p className="start-sub">
           Your submission will be canonicalized, fingerprinted (SHA-256), preserved in custody, and issued as a formal PDF after payment.
         </p>
@@ -121,13 +122,13 @@ function StartPageContent() {
         </div>
 
         <div className="start-section">
-          <h3 className="start-section-hdr">2. The Thought (Genesis Record)</h3>
+          <h3 className="start-section-hdr">{TENANT_CONFIG.startSection2} ({TENANT_CONFIG.recordType})</h3>
           <label className="start-label">Original Submission (Verbatim)</label>
           <textarea
             className="start-textarea"
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Enter your idea, claim, or prose here directly..."
+            placeholder={TENANT_CONFIG.startPlaceholder}
           />
           <p className="start-sub" style={{ fontSize: 12, marginTop: 8 }}>
             This text will be canonically hashed. Ensure it is complete.
@@ -158,7 +159,7 @@ function StartPageContent() {
               <div>
                 <div className="start-tier-title">Genesis Record — $29</div>
                 <div className="start-tier-desc">
-                  Create a permanent, cryptographically verifiable, time-stamped record showing that you possessed an original idea at a specific moment in time.
+                  {TENANT_CONFIG.tierDescriptions.genesis}
                 </div>
               </div>
             </label>
@@ -174,8 +175,7 @@ function StartPageContent() {
               />
               <div>
                 <div className="start-tier-title">Minted Instrument — $49</div>
-                <div className="start-tier-desc">
-                  Everything in Genesis, plus <strong>Traction Dashboard</strong>. Track verification signals, valuation interest, and chain-of-custody analytics.
+                <div className="start-tier-desc" dangerouslySetInnerHTML={{ __html: TENANT_CONFIG.tierDescriptions.minted.replace("Traction Dashboard", "<strong>Traction Dashboard</strong>") }}>
                 </div>
               </div>
             </label>
@@ -191,8 +191,7 @@ function StartPageContent() {
               />
               <div>
                 <div className="start-tier-title">Engraved Instrument — $99</div>
-                <div className="start-tier-desc">
-                  Everything in Minted, plus <strong>Deal Room</strong>. Clickwrap NDA, Disclosure Management, Public Proof, and Engraved Seal.
+                <div className="start-tier-desc" dangerouslySetInnerHTML={{ __html: TENANT_CONFIG.tierDescriptions.engraved.replace("Deal Room", "<strong>Deal Room</strong>") }}>
                 </div>
               </div>
             </label>

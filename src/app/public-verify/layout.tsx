@@ -1,5 +1,7 @@
+import { TENANT_CONFIG } from "@/lib/tenant";
+
 export const metadata = {
-  title: "Proof of Thought™ Public Registry",
+  title: `${TENANT_CONFIG.appName} Public Registry`,
   description: "Public cryptographic verification ledger",
 };
 
