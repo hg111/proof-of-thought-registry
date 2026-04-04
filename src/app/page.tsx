@@ -91,7 +91,7 @@ function LandingPageContent() {
 
       <Button href={`/start${isLight ? '?theme=light' : ''}`} style={{ boxShadow: "0 0 15px rgba(66, 153, 225, 0.5)", borderColor: "#4299e1" }}>Get started</Button>
       <p className="small" style={{ marginTop: 18 }}>
-        Not a patent filing. No lawyers required.
+        {TENANT_CONFIG.disclaimerSmall}
       </p>
 
       <Divider />
@@ -100,20 +100,14 @@ function LandingPageContent() {
         <div className="card">
           <div className="cardTitle">What this is</div>
           <ul className="list">
-            <li>A formal certificate of conception &amp; possession</li>
-            <li>A private custody vault that preserves your sealed ideas </li>
-            <li>A cryptographic chain records your idea as it evolves over time</li>
-            <li>Early traction for original human ideas, helping transform them into tradeable assets</li>
+            {TENANT_CONFIG.whatItIs.map((item, i) => <li key={i}>{item}</li>)}
           </ul>
         </div>
 
         <div className="card">
           <div className="cardTitle">What this is not</div>
           <ul className="list">
-            <li>Not a patent filing</li>
-            <li>Not legal advice</li>
-            <li>Not a government registry</li>
-            <li>Not a disclosure or publication of your idea</li>
+            {TENANT_CONFIG.whatItIsNot.map((item, i) => <li key={i}>{item}</li>)}
           </ul>
         </div>
       </div>
@@ -123,10 +117,9 @@ function LandingPageContent() {
       <div>
         <div className="kicker">How it works</div>
         <ol className="list">
-          <li><b>Enter your idea.</b> Paste your original text.</li>
-          <li><b>We time-seal and preserve it.</b> We compute a cryptographic fingerprint and record custody.</li>
-          <li><b>Receive your certificate.</b> Download a formal PDF with a public verification link.</li>
-          <li><b>Get traction.</b> Receive early market validation or valuation signals.</li>
+          {TENANT_CONFIG.howItWorks.map((step, i) => (
+            <li key={i}><b>{step.title}</b> {step.desc}</li>
+          ))}
         </ol>
       </div>
 
