@@ -21,6 +21,10 @@ ENV NEXT_TELEMETRY_DISABLED 1
 # Disable type checking during build to match Vercel's default behavior (optional, prevents build fail on warnings)
 # ENV SKIP_ENV_VALIDATION 1 
 
+# Allow Docker to receive the environment variable from Render during the build phase
+ARG NEXT_PUBLIC_TENANT
+ENV NEXT_PUBLIC_TENANT=$NEXT_PUBLIC_TENANT
+
 RUN npm run build
 
 # 3. Production image, copy all the files and run next
