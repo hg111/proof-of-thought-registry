@@ -3,6 +3,7 @@
 import Divider from "@/components/Divider";
 import Button from "@/components/Button";
 import Notice from "@/components/Notice";
+import { TENANT_CONFIG } from "@/lib/tenant";
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
@@ -62,10 +63,10 @@ function LandingPageContent() {
         </button>
       </div>
 
-      <div className="kicker">PROOF OF THOUGHT™</div>
-      <h1 className="h1">Prove the idea is yours - seal it in 30 seconds.</h1>
+      <div className="kicker">{TENANT_CONFIG.appName}</div>
+      <h1 className="h1">{TENANT_CONFIG.heroTitle}</h1>
       <p className="subhead">
-        Create a permanent, cryptographically verifiable, time-stamped record showing that you possessed an original idea at a specific moment in time.
+        {TENANT_CONFIG.heroSubhead}
       </p>
 
       {/* Authority Seal */}
@@ -150,16 +151,18 @@ function LandingPageContent() {
         </p>
       </div>
 
-      <div style={{ marginTop: 40, textAlign: "center" }}>
-        <a
-          href="/assets/Proof_of_Thought_Genesis_White_Paper.pdf"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ color: "var(--accent)", fontSize: "0.9rem", textDecoration: "none" }}
-        >
-          Read the Founding White Paper &rarr;
-        </a>
-      </div>
+      {TENANT_CONFIG.whitepaperLinkText && (
+        <div style={{ marginTop: 40, textAlign: "center" }}>
+          <a
+            href="/assets/Proof_of_Thought_Genesis_White_Paper.pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: "var(--accent)", fontSize: "0.9rem", textDecoration: "none" }}
+          >
+            {TENANT_CONFIG.whitepaperLinkText}
+          </a>
+        </div>
+      )}
 
       <div className="footer">
         <a href={`/public-ledger${isLight ? '?theme=light' : ''}`}>Public Ledger</a>
@@ -169,7 +172,7 @@ function LandingPageContent() {
         <a href={`/contact${isLight ? '?theme=light' : ''}`}>Contact</a>
       </div>
       <div style={{ textAlign: "center", marginTop: 20, fontSize: 11, color: "var(--muted)" }}>
-        PROOF OF THOUGHT™ • Patent Pending
+        {TENANT_CONFIG.footerTagline}
       </div>
     </>
   );

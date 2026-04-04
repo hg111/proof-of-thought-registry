@@ -17,4 +17,5 @@ data/
 
 # your local zips
 src.zip
-src 2.zip
+src*.zip
+src_bkp/
